@@ -9,10 +9,10 @@ DEPS = $(wildcard $(INCLUDES)/%.h)
 all: $(BINDIR)/client $(BINDIR)/server $(DEPS)
 
 $(BINDIR)/client: $(SRCDIR)/client.c
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $(SRCDIR)/grass.c $< -o $@
 
 $(BINDIR)/server: $(SRCDIR)/server.c
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $(SRCDIR)/grass.c $< -o $@
 
 .PHONY: clean
 clean:
