@@ -1,11 +1,20 @@
 #include <grass.h>
 #include <stdio.h>
 
+/*
+ * Hijack the flow!
+ *
+ */
 void hijack_flow() {
     printf("Method hijack: Accepted\n");
     fflush(stdout);
 }
 
+/*
+ * Creates and returns a socket either for the client of the server.
+ *
+ * client_server: mode for the socket
+ */
 int create_socket(enum mode client_server) {
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd == -1) {
