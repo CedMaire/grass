@@ -1,5 +1,6 @@
 #include <grass.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 static struct User **userlist;
 static int numUsers;
@@ -63,7 +64,7 @@ void parse_grass() {
 		char* token = strtok(line, " ");
 		if (strncmp("#", token, 1) == 0) {
 			comment_lines++;
-		//Parse the base
+			//Parse the base
 		} else if (comment_lines == 3 && strncmp("base", token, 4) == 0) {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
@@ -71,7 +72,7 @@ void parse_grass() {
 			}
 			strncpy(base, token, 32);
 			printf("base: %s\n", token);
-		//Parse the port
+			//Parse the port
 		} else if (comment_lines == 4 && strncmp("port", token, 4) == 0) {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
@@ -79,7 +80,7 @@ void parse_grass() {
 			}
 			strncpy(port, token, 7);
 			printf("port: %s\n", token);
-		//Count the number of user
+			//Count the number of user
 		} else if (comment_lines == 5 && strncmp("user", token, 4) == 0) {
 			if (nbr_users == 0) {
 				offset_of_users = ftell(conf);
@@ -92,29 +93,53 @@ void parse_grass() {
 		fprintf(stderr, "error when counting the users\n");
 	}
 
-	if (userlist = calloc(nbr_users, sizeof(struct User*)) == NULL) {
+	if ((userlist = calloc(nbr_users, sizeof(struct User*))) == NULL) {
 		fprintf(stderr, "allocation error\n");
 	}
 	//Fill the userlist
+	int userID = 0;
 	while (fgets(line, 32, conf) != NULL) {
 		char* token = strtok(line, " ");
-		if (User u = calloc(1, sizeof(struct User)) == NULL) {
-			fprintf(stderr, "allocation error\n");
-		}
+
 		if (comment_lines == 5 && strncmp("user", token, 4) == 0) {
+			//allocate a User
+			struct User *u;
+			if ((u = calloc(1, sizeof(struct User))) == NULL) {
+				fprintf(stderr, "allocation error\n");
+			}
+
+			//Fill the username
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "user not found, wrong format\n");
 			}
+			const char* username;
+			if ((username = calloc(16, sizeof(char))) == NULL) {
+				fprintf(stderr, "allocation error\n");
+			}
+			strncpy(username, token, 16);
 			printf("user: %s ", token);
 
+			//Fill the password
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "password not found, wrong format\n");
 			}
+			const char* password;
+			if ((password = calloc(16, sizeof(char))) == NULL) {
+				fprintf(stderr, "allocation error\n");
+			}
+			strncpy(password, token, 16);
+			u->uname = username;
+			u->pass = password;
+			u->isLoggedIn = false;
 			printf("pwd: %s\n", token);
+			userlist[userID] = u;
+
+			userID++;
 		}
 	}
+	numUsers = userID + 1;
 
 	printf("End of conf file reached\n");
 }
@@ -122,10 +147,9 @@ void parse_grass() {
 int main() {
 
 	parse_grass();
+	printf("%s", userlist[0]->isLoggedIn);
 	// TODO:
-	// Parse the grass.conf file
 	// Listen to the port and handle each connection
-
 	int socket_fd = create_socket(server);
 	if (socket_fd < 0) {
 		fprintf(stderr, "Exit program because of error.\n");
