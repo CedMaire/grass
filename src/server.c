@@ -147,7 +147,6 @@ void parse_grass() {
 int main() {
 
 	parse_grass();
-	printf("%s", userlist[0]->isLoggedIn);
 	// TODO:
 	// Listen to the port and handle each connection
 	int socket_fd = create_socket(server);
