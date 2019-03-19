@@ -142,6 +142,8 @@ void parse_grass() {
 	numUsers = userID + 1;
 
 	printf("End of conf file reached\n");
+
+	fclose(conf);
 }
 
 int main() {
