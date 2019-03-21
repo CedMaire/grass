@@ -57,15 +57,11 @@ void parse_grass() {
 	}
 
 	char* line[32];
-	size_t comment_lines = 0;
 	size_t nbr_users = 0;
 	size_t offset_of_users = 0;
 	while (fgets(line, 32, conf) != NULL) {
 		char* token = strtok(line, " ");
-		if (strncmp("#", token, 1) == 0) {
-			comment_lines++;
-			//Parse the base
-		} else if (comment_lines == 3 && strncmp("base", token, 4) == 0) {
+		if (strncmp("base", token, 4) == 0) {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "base not found\n");
@@ -73,7 +69,7 @@ void parse_grass() {
 			strncpy(base, token, 32);
 			printf("base: %s\n", token);
 			//Parse the port
-		} else if (comment_lines == 4 && strncmp("port", token, 4) == 0) {
+		} else if (strncmp("port", token, 4) == 0) {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "port not found\n");
@@ -81,7 +77,7 @@ void parse_grass() {
 			strncpy(port, token, 7);
 			printf("port: %s\n", token);
 			//Count the number of user
-		} else if (comment_lines == 5 && strncmp("user", token, 4) == 0) {
+		} else if (strncmp("user", token, 4) == 0) {
 			if (nbr_users == 0) {
 				offset_of_users = ftell(conf);
 			}
@@ -101,7 +97,7 @@ void parse_grass() {
 	while (fgets(line, 32, conf) != NULL) {
 		char* token = strtok(line, " ");
 
-		if (comment_lines == 5 && strncmp("user", token, 4) == 0) {
+		if (strncmp("user", token, 4) == 0) {
 			//allocate a User
 			struct User *u;
 			if ((u = calloc(1, sizeof(struct User))) == NULL) {
