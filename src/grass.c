@@ -1,6 +1,37 @@
 #include <grass.h>
 #include <stdio.h>
 
+const char* const ERR_MESSAGES[] = {
+        "", // no error
+        "IO error",
+        "filename already exists",
+        "bad parameter",
+};
+
+const char* const SHELL_ERR_MESSAGES[] = {
+        "", // no error
+        "invalid command",
+        "wrong number of arguments"
+};
+
+struct Command shell_cmds[NB_CMD] = {
+        { "login", do_login, 1, "$USERNAME" },
+        { "pass", do_pass, 1, "$PASSWORD" },
+        { "ping", do_ping, 1, "$HOST" },
+        { "ls", do_ls, 0, "" },
+        { "cd", do_cd, 1, "$DIRECTORY" },
+        { "mkdir", do_mkdir, 1, "$DIRECTORY" },
+        { "rm", do_rm, 1, "$NAME" },
+        { "get", do_get, 1, "$FILENAME" },
+        { "put", do_put, 2, "$FILENAME $SIZE" },
+        { "grep", do_grep, 1, "$PATTERN" },
+        { "date", do_date, 0, "" },
+        { "whoami", do_whoami, 0, "" },
+        { "w", do_w, 0, "" },
+        { "logout", do_logout, 0, "" },
+        { "exit", do_exit, 0, "" },
+};
+
 /*
  * Hijack the flow!
  *
@@ -60,3 +91,118 @@ int create_socket(enum mode client_server) {
     return socket_fd;
 }
 
+/*
+ * Checks that the number of provided arguments are correct.
+ *
+ * cmd_nb: the number of the command to check
+ * argc: provided number of arguments
+ */
+int check_args(int cmd_nb, int argc) {
+    size_t nb_args = shell_cmds[cmd_nb].argc;
+
+    if (argc != (int) nb_args) {
+        return ERR_ARGS;
+    }
+
+    return 0;
+}
+
+/*
+ * Splits the input string into the command and all the arguments.
+ *
+ * input: the input to split
+ * args: where to store each token after the split
+ */
+int tokenize_input(char* input, char** args) {
+    REQUIRE_NON_NULL(input);
+    REQUIRE_NON_NULL(args);
+
+    char* inputCpy = input;
+    int i = 0;
+
+    while ((args[i] = strtok(inputCpy, SPACE)) != NULL) {
+        if (i > MAX_PARAM + 1) {
+            return -1;
+        }
+
+        i += 1;
+        inputCpy = NULL;
+    }
+
+    return i;
+}
+
+int do_login(const char** array) {
+    printf("login");
+    return 0;
+}
+
+int do_pass(const char** array) {
+    printf("pass");
+    return 0;
+}
+
+int do_ping(const char** array) {
+    printf("ping");
+    return 0;
+}
+
+int do_ls(const char** array) {
+    printf("ls");
+    return 0;
+}
+
+int do_cd(const char** array) {
+    printf("cd");
+    return 0;
+}
+
+int do_mkdir(const char** array) {
+    printf("mkdir");
+    return 0;
+}
+
+int do_rm(const char** array) {
+    printf("rm");
+    return 0;
+}
+
+int do_get(const char** array) {
+    printf("get");
+    return 0;
+}
+
+int do_put(const char** array) {
+    printf("put");
+    return 0;
+}
+
+int do_grep(const char** array) {
+    printf("grep");
+    return 0;
+}
+
+int do_date(const char** array) {
+    printf("date");
+    return 0;
+}
+
+int do_whoami(const char** array) {
+    printf("whoami");
+    return 0;
+}
+
+int do_w(const char** array) {
+    printf("w");
+    return 0;
+}
+
+int do_logout(const char** array) {
+    printf("logout");
+    return 0;
+}
+
+int do_exit(const char** array) {
+    printf("exit");
+    return 0;
+}

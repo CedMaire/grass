@@ -16,7 +16,73 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
+#define NB_CMD (15)
+#define MAX_INPUT_LENGTH (255)
+#define MAX_PARAM (2)
+#define SHELL_PROMPT ">>> "
+#define STRING_END '\0'
+#define ENTER '\n'
+#define SPACE_CHAR ' '
+#define SPACE " "
+#define PATH_TOKEN '/'
+
+#ifdef DEBUG
+#define debug_print(fmt, ...) \
+    fprintf(stderr, fmt, __VA_ARGS__)
+#else
+#define debug_print(fmt, ...) \
+    do {} while(0)
+#endif
+
+#define REQUIRE_NON_NULL(arg) \
+    do { \
+        if (arg == NULL) { \
+            debug_print("ERROR: parameter %s is NULL when calling  %s() (defined in %s)\n", #arg, __func__, __FILE__); \
+            return ERR_BAD_PARAMETER; \
+        } \
+    } while(0)
+
+extern const char* const ERR_MESSAGES[];
+extern const char* const SHELL_ERR_MESSAGES[];
+
+// Modes for the socket creation.
+enum mode{server, client};
+
+// FUNCTIONS
+typedef int (*shell_fct)(const char** array);
+
+void hijack_flow();
+int create_socket(enum mode client_server);
+int check_args(int cmd_nb, int argc);
+int tokenize_input(char* input, char** args);
+
+int do_login(const char** array);
+int do_pass(const char** array);
+int do_ping(const char** array);
+int do_ls(const char** array);
+int do_cd(const char** array);
+int do_mkdir(const char** array);
+int do_rm(const char** array);
+int do_get(const char** array);
+int do_put(const char** array);
+int do_grep(const char** array);
+int do_date(const char** array);
+int do_whoami(const char** array);
+int do_w(const char** array);
+int do_logout(const char** array);
+int do_exit(const char** array);
+
 // STRUCTURES, ENUMERATIONS
+enum error_codes {
+    ERR_FIRST = -128, // not an actual error but to set the first error number
+    ERR_BAD_PARAMETER
+};
+
+enum shell_error_codes {
+    ERR_INVALID_CMD = 1,
+    ERR_ARGS
+};
+
 struct User {
     const char* uname;
     const char* pass;
@@ -26,15 +92,11 @@ struct User {
 
 struct Command {
     const char* cname;
-    const char* cmd;
+    shell_fct fct;
+    size_t argc;
     const char* params;
 };
 
-// Modes for the socket creation.
-enum mode{server, client};
-
-// FUNCTIONS
-void hijack_flow();
-int create_socket(enum mode);
+extern struct Command shell_cmds[NB_CMD];
 
 #endif
