@@ -16,6 +16,7 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
+// STRUCTURES, ENUMERATIONS
 struct User {
     const char* uname;
     const char* pass;
@@ -29,6 +30,11 @@ struct Command {
     const char* params;
 };
 
+// Modes for the socket creation.
+enum mode{server, client};
+
+// FUNCTIONS
 void hijack_flow();
+int create_socket(enum mode);
 
 #endif
