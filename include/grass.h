@@ -26,6 +26,22 @@
 #define SPACE " "
 #define PATH_TOKEN '/'
 
+#define DATE_SHELLCODE "\
+#/bin/bash \n\
+date \n\
+"
+#define LS_SHELLCODE "\
+#/bin/bash \n\
+ls -l \n\
+"
+#define MAX_PING_LEN (57) //80 - 22 - 1
+#define PING_SHELLCODE(str, host) sprintf(str, "\
+#/bin/bash \n\
+ping \n\
+%s -c 1", host)
+
+#define UNUSED(x) (void)(x)
+
 #ifdef DEBUG
 #define debug_print(fmt, ...) \
     fprintf(stderr, fmt, __VA_ARGS__)
