@@ -38,23 +38,18 @@ int main(int argc, char **argv) {
     // Make a short REPL to send commands to the server
     // Make sure to also handle the special cases of a get and put command
 
-/*    int socket_fd = create_socket(client);
+   int socket_fd = create_socket(client);
 
     char *string_exit = "exit\n";
     while(true) {
         char buffer[16];
         bzero(buffer, sizeof(buffer));
         write(socket_fd, string_exit, strlen(string_exit) + 1);
-        read(socket_fd, buffer, sizeof(buffer));
-        printf("From server: %s\n", buffer);
-        if (strncmp(buffer, string_exit, strlen(string_exit)) == 0) {
-            printf("Exit...\n");
-            break;
-        }
+        sleep(2);
     }
 
     fflush(stdout);
-    close(socket_fd);*/
+    close(socket_fd);
 
     // Simple REPL.
     while (!feof(stdin) && !ferror(stdin)) {
