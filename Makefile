@@ -3,7 +3,7 @@ BINDIR   = bin
 INCLUDES = include
 
 CC=gcc
-CFLAGS=-Wall -Wextra -g -fno-stack-protector -z execstack -lpthread -std=gnu11 -I $(INCLUDES)/ -m32
+CFLAGS=-Wall -Wextra -g -fno-stack-protector -z execstack -pthread -std=gnu11 -I $(INCLUDES)/
 DEPS = $(wildcard $(INCLUDES)/%.h)
 
 all: $(BINDIR)/client $(BINDIR)/server $(DEPS)

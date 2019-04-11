@@ -142,37 +142,47 @@ void parse_grass() {
 	fclose(conf);
 }
 
+void client_handler(int client_fd) {
+	printf("I'm a new thread!Look at me!\n");
+	char *string_exit = "exit\n";
+	while(true) {
+		char buffer[16];
+		bzero(buffer, sizeof(buffer));
+		read(client_fd, buffer, sizeof(buffer));
+		printf("From client: %s\n", buffer);
+	}
+	close(client_fd);
+}
+
 int main() {
 
 	parse_grass();
-	// TODO:
-	// Listen to the port and handle each connection
+
+	//Main socket
 	int socket_fd = create_socket(server);
 	if (socket_fd < 0) {
 		fprintf(stderr, "Exit program because of error.\n");
 	}
 
-	struct sockaddr_in client_address;
-	bzero(&client_address, sizeof(client_address));
-	int client_struct_length = sizeof(client_address);
-	int connection_fd = accept(socket_fd, (struct sockaddr *) &client_address,
-			&client_struct_length);
-	if (connection_fd < 0) {
-		fprintf(stderr, "Accepting failed!\n");
-	} else {
-		printf("Client accepted...\n");
-	}
+	//Wait for clients
+	while(1){
+		//Create socket for a connecting client
+		struct sockaddr_in client_address;
+		bzero(&client_address, sizeof(client_address));
+		int client_struct_length = sizeof(client_address);
+		int connection_fd = accept(socket_fd, (struct sockaddr *) &client_address, &client_struct_length);
+		if (connection_fd < 0) {
+			fprintf(stderr, "Accepting failed!\n");
+		} else {
+			printf("Client accepted...\n");
+		}
 
-	char *string_exit = "exit\n";
-	while (true) {
-		char buffer[16];
-		bzero(buffer, sizeof(buffer));
-		read(connection_fd, buffer, sizeof(buffer));
-		printf("From client: %s\n", buffer);
-		if (strncmp(buffer, string_exit, strlen(string_exit)) == 0) {
-			write(connection_fd, string_exit, strlen(string_exit) + 1);
-			printf("Exit...\n");
-			break;
+		//Create new thread for the client
+		pthread_t child;
+
+		int err = pthread_create(&child,NULL,client_handler,connection_fd);
+		if(err != 0) {
+			fprintf(stderr, "Fail to open a new thread!\n");
 		}
 	}
 
