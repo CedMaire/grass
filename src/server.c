@@ -61,7 +61,10 @@ void parse_grass() {
 	size_t offset_of_users = 0;
 	while (fgets(line, 32, conf) != NULL) {
 		char* token = strtok(line, " ");
-		if (strncmp("base", token, 4) == 0) {
+		if (strncmp("#", token, 1) == 0) {
+			continue;
+			//Parse the base
+		}  else if (strncmp("base", token, 4) == 0) {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "base not found\n");
@@ -92,6 +95,7 @@ void parse_grass() {
 	if ((userlist = calloc(nbr_users, sizeof(struct User*))) == NULL) {
 		fprintf(stderr, "allocation error\n");
 	}
+
 	//Fill the userlist
 	int userID = 0;
 	while (fgets(line, 32, conf) != NULL) {
@@ -135,7 +139,7 @@ void parse_grass() {
 			userID++;
 		}
 	}
-	numUsers = userID + 1;
+	numUsers = userID;
 
 	printf("End of conf file reached\n");
 
@@ -150,6 +154,18 @@ void client_handler(int client_fd) {
 		bzero(buffer, sizeof(buffer));
 		read(client_fd, buffer, sizeof(buffer));
 		printf("From client: %s\n", buffer);
+		fflush(stdout);
+		for(int i = 0; i < numUsers; i++) {
+			fflush(stdout);
+			if (strncmp(userlist[i]->uname, buffer, 16) == 0) {
+				printf("User ok\n");
+				fflush(stdout);
+				char*    ch2="OK";
+				write (client_fd, ch2,16);
+				break;
+			}
+		}
+		break;
 	}
 	close(client_fd);
 }

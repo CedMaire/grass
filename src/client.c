@@ -40,12 +40,18 @@ int main(int argc, char **argv) {
 
    int socket_fd = create_socket(client);
 
-    char *string_exit = "exit\n";
+    char *string_exit = "Acidburn";
+    int counter = 0;
     while(true) {
         char buffer[16];
         bzero(buffer, sizeof(buffer));
-        write(socket_fd, string_exit, strlen(string_exit) + 1);
-        sleep(2);
+        if(counter == 0) {
+        	write(socket_fd, string_exit, strlen(string_exit) + 1);
+        	counter++;
+        }
+        read(socket_fd, buffer, sizeof(buffer));
+        printf("From server: %s\n", buffer);
+    	break;
     }
 
     fflush(stdout);
