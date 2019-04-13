@@ -2,12 +2,11 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-static struct User **userlist;
-static int numUsers;
 static struct Command **cmdlist;
 static int numCmds;
 char port[7] = "31337";
 static char* base[32];
+int max_size = 16;
 
 // Helper function to run commands in unix.
 void run_command(const char* command, int sock) {
@@ -114,10 +113,11 @@ void parse_grass() {
 				fprintf(stderr, "user not found, wrong format\n");
 			}
 			const char* username;
-			if ((username = calloc(16, sizeof(char))) == NULL) {
+			if ((username = calloc(max_size, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
 			}
-			strncpy(username, token, 16);
+			strncpy(username, token, max_size- 1);
+			strcat(username, "\n");
 			printf("user: %s ", token);
 
 			//Fill the password
@@ -126,10 +126,11 @@ void parse_grass() {
 				fprintf(stderr, "password not found, wrong format\n");
 			}
 			const char* password;
-			if ((password = calloc(16, sizeof(char))) == NULL) {
+			if ((password = calloc(max_size, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
 			}
-			strncpy(password, token, 16);
+			strncpy(password, token, max_size);
+
 			u->uname = username;
 			u->pass = password;
 			u->isLoggedIn = false;
@@ -146,25 +147,112 @@ void parse_grass() {
 	fclose(conf);
 }
 
+//array should be be username newline
+//user name must be in conf file
+//send pipe login waiting
+const int do_login_server(const char** array) {
+	printf("login\n");
+	fflush(stdout);
+	//check if end by a new line:
+	printf("%s", array);
+	fflush(stdout);
+	if(array == NULL || *array == '\0') {
+		printf("AIE CARAMBA\n");
+		fflush(stdout);
+	}
+	else {
+		//no need to check for the new line as it is put directly in uname
+		for(int i = 0; i < numUsers; i++) {
+			if (strncmp(userlist[i]->uname, array, strlen(userlist[i]->uname)-1) == 0) {
+				printf("Known User\n");
+				fflush(stdout);
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+//directly follow login command
+//password followed by newline
+//if matches, user authentified
+//password = array[0];
+//send to pipe password and check that exists one waiting password
+int do_pass_server(const char** array, int index) {
+	printf("pass\n");
+	fflush(stdout);
+	if(index < 0 || array == NULL || *array == '\0' ) {
+		printf("AIE CARAMBA\n");
+		fflush(stdout);
+	}
+	else {
+		printf("%s", userlist[index]->pass);
+		printf("%s", array);
+		fflush(stdout);
+		if (strncmp(userlist[index]->pass, array, 13) == 0) {
+			printf("Matching user and pass\n");
+			fflush(stdout);
+			if(userlist[index]->isLoggedIn) {
+				return -1;
+			}
+			else{
+				userlist[index]->isLoggedIn = true;
+				return 1;
+			}
+		}
+	}
+    return 0;
+}
+
 void client_handler(int client_fd) {
+	//Check that non-empty before going to pass
+	//-1 is non-set
+	//-2 is incorrect
+	int username_index = -1;
+	//Check that to determine if logged in
+	bool loggedIn = false;
+
 	printf("I'm a new thread!Look at me!\n");
 	char *string_exit = "exit\n";
 	while(true) {
-		char buffer[16];
+		char* buffer[max_size];
 		bzero(buffer, sizeof(buffer));
 		read(client_fd, buffer, sizeof(buffer));
 		printf("From client: %s\n", buffer);
 		fflush(stdout);
-		for(int i = 0; i < numUsers; i++) {
-			fflush(stdout);
-			if (strncmp(userlist[i]->uname, buffer, 16) == 0) {
-				printf("User ok\n");
+		//What to do if the function is do_login
+		username_index = do_login_server(&buffer);
+		printf("index: %d\n", username_index);
+
+
+		int pwd_length = read(client_fd, buffer, max_size);
+		printf("From client: %s\n", buffer);
+		fflush(stdout);
+
+		//What to do if the function is do_pass
+		if(username_index != -1 && username_index != -2) {
+			if(loggedIn) {
+				write(client_fd, "Already logged in", 18);
+			}else{
+				int result = do_pass_server(&buffer, username_index);
+				printf("%d\n", result);
 				fflush(stdout);
-				char*    ch2="OK";
-				write (client_fd, ch2,16);
-				break;
+				if(result == 1){
+					write(client_fd, "Log in success", 15);
+					loggedIn = true;
+				}else if(result == -1) {
+					write(client_fd, "You are already logged in on another client", 44);
+				}else {
+					write(client_fd, "Incorrect credentials", 22);
+					username_index = -1;
+				}
 			}
+		}else {
+			write(client_fd, "Incorrect credentials", 22);
+			username_index = -1;
 		}
+
+		//If username_index is set and loggedIn is false you have to do pass: otherwise trap.
 		break;
 	}
 	close(client_fd);

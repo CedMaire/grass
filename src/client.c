@@ -40,14 +40,17 @@ int main(int argc, char **argv) {
 
    int socket_fd = create_socket(client);
 
-    char *string_exit = "Acidburn";
+    char *string_exit = "Acidburn\n";
+    char *pswd = "CrashOverride\n";
     int counter = 0;
     while(true) {
-        char buffer[16];
+        char buffer[25];
         bzero(buffer, sizeof(buffer));
         if(counter == 0) {
         	write(socket_fd, string_exit, strlen(string_exit) + 1);
         	counter++;
+        	sleep(2);
+        	write(socket_fd, pswd, strlen(pswd) + 1);
         }
         read(socket_fd, buffer, sizeof(buffer));
         printf("From server: %s\n", buffer);

@@ -113,6 +113,9 @@ struct Command {
     const char* params;
 };
 
+static struct User **userlist;
+static int numUsers;
+
 extern struct Command shell_cmds[NB_CMD];
 
 #endif
