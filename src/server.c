@@ -2,6 +2,8 @@
 #include <ctype.h>
 #include <stdbool.h>
 
+static struct User **userlist;
+static int numUsers;
 static struct Command **cmdlist;
 static int numCmds;
 char port[7] = "31337";
@@ -204,6 +206,32 @@ int do_pass_server(const char** array, int index) {
     return 0;
 }
 
+int do_whoami_server(const char** array, int index) {
+    printf("whoami\n");
+    fflush(stdout);
+    UNUSED(array);
+    if(index >= 0 && userlist[index]->isLoggedIn) {
+    	return 1;
+    }
+    //check auth
+    //currently logged user
+    return 0;
+}
+
+int do_logout_server(const char** array, int index) {
+    printf("logout\n");
+    fflush(stdout);
+    UNUSED(array);
+    //check authentication
+    //logout
+    if(index >= 0 && userlist[index]->isLoggedIn) {
+    	userlist[index]->isLoggedIn = false;
+    	return 1;
+    }
+    return 0;
+}
+
+
 void client_handler(int client_fd) {
 	//Check that non-empty before going to pass
 	//-1 is non-set
@@ -252,7 +280,26 @@ void client_handler(int client_fd) {
 			username_index = -1;
 		}
 
+		sleep(1);
 		//If username_index is set and loggedIn is false you have to do pass: otherwise trap.
+
+		//What to do if whoami
+		//EST CE QUE LE FAIT DE RENVOYER LE USERNAME AVEC \N A LA FIN PEUT CAUSER DES PROBLEMES
+		int answer = do_whoami_server("", username_index);
+		if(answer == 1 && loggedIn) {
+			write(client_fd, userlist[username_index]->uname, max_size);
+		} else {
+			write(client_fd, "You are not logged in", 22);
+		}
+		sleep(1);
+		answer = do_logout_server("", username_index);
+		if(answer == 1 && loggedIn) {
+			loggedIn = false;
+			username_index = -1;
+			write(client_fd, "Loggout success", 16);
+		} else {
+			write(client_fd, "You are not logged in", 22);
+		}
 		break;
 	}
 	close(client_fd);

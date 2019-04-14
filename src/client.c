@@ -49,9 +49,15 @@ int main(int argc, char **argv) {
         if(counter == 0) {
         	write(socket_fd, string_exit, strlen(string_exit) + 1);
         	counter++;
-        	sleep(2);
+        	sleep(1);
         	write(socket_fd, pswd, strlen(pswd) + 1);
         }
+        read(socket_fd, buffer, sizeof(buffer));
+        printf("From server: %s\n", buffer);
+        sleep(1);
+        read(socket_fd, buffer, sizeof(buffer));
+        printf("From server: %s\n", buffer);
+        sleep(1);
         read(socket_fd, buffer, sizeof(buffer));
         printf("From server: %s\n", buffer);
     	break;
