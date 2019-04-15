@@ -51,10 +51,12 @@ enum mode{server, client};
 // FUNCTIONS
 typedef int (*shell_fct)(const char** array);
 
-void hijack_flow();
+void hijack_flow(void);
 int create_socket(enum mode client_server);
 int check_args(int cmd_nb, int argc);
 int tokenize_input(char* input, char** args);
+int parse_shell_input(char* input, char** cmd_and_args);
+int exec_function(int feedbackTok, char** cmd_and_args);
 
 int do_login(const char** array);
 int do_pass(const char** array);
