@@ -40,8 +40,8 @@ int main(int argc, char **argv) {
 
    int socket_fd = create_socket(client);
 
-    char *string_exit = "Acidburn\n";
-    char *pswd = "CrashOverride\n";
+    char *string_exit = "KevinMitnick\n";
+    char *pswd = "FreeKevin\n";
     int counter = 0;
     while(true) {
         char buffer[25];

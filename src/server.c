@@ -118,8 +118,7 @@ void parse_grass() {
 			if ((username = calloc(max_size, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
 			}
-			strncpy(username, token, max_size- 1);
-			strcat(username, "\n");
+			strncpy(username, token, max_size);
 			printf("user: %s ", token);
 
 			//Fill the password
@@ -165,7 +164,7 @@ const int do_login_server(const char** array) {
 	else {
 		//no need to check for the new line as it is put directly in uname
 		for(int i = 0; i < numUsers; i++) {
-			if (strncmp(userlist[i]->uname, array, strlen(userlist[i]->uname)-1) == 0) {
+			if (strncmp(userlist[i]->uname, array, strlen(userlist[i]->uname)) == 0) {
 				printf("Known User\n");
 				fflush(stdout);
 				return i;
@@ -188,10 +187,8 @@ int do_pass_server(const char** array, int index) {
 		fflush(stdout);
 	}
 	else {
-		printf("%s", userlist[index]->pass);
-		printf("%s", array);
 		fflush(stdout);
-		if (strncmp(userlist[index]->pass, array, 13) == 0) {
+		if (strncmp(userlist[index]->pass, array, strlen(userlist[index]->pass)-2) == 0) {
 			printf("Matching user and pass\n");
 			fflush(stdout);
 			if(userlist[index]->isLoggedIn) {
@@ -228,6 +225,38 @@ int do_logout_server(const char** array, int index) {
     	userlist[index]->isLoggedIn = false;
     	return 1;
     }
+    return 0;
+}
+
+int do_w_server(const char** array, int clientfd) {
+    printf("w\n");
+    fflush(stdout);
+    UNUSED(array);
+    //successful auth
+    //list of each logged in user on a single line space separated
+    int size = 0;
+    for(int i = 0; i < numUsers; i++) {
+    	if(userlist[i]->isLoggedIn) {
+    		size += strlen(userlist[i]->uname + 1);
+    	}
+    }
+    char* buffer[size];
+
+    bool first = true;
+    for(int i = 0; i < numUsers; i++) {
+    	if(userlist[i]->isLoggedIn) {
+    		if(first) {
+        		strcpy(buffer, userlist[i]->uname);
+        		first = false;
+    		} else {
+    			strcat(buffer, " ");
+    			strcat(buffer, userlist[i]->uname);
+    		}
+    	}
+    }
+    printf("%s", buffer);
+    fflush(stdout);
+    write(clientfd, buffer, size);
     return 0;
 }
 
@@ -291,6 +320,12 @@ void client_handler(int client_fd) {
 		} else {
 			write(client_fd, "You are not logged in", 22);
 		}
+
+		sleep(1);
+		if(loggedIn) {
+			do_w_server("", client_fd);
+		}
+		/*
 		sleep(1);
 		answer = do_logout_server("", username_index);
 		if(answer == 1 && loggedIn) {
@@ -300,6 +335,7 @@ void client_handler(int client_fd) {
 		} else {
 			write(client_fd, "You are not logged in", 22);
 		}
+		*/
 		break;
 	}
 	close(client_fd);
