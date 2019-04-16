@@ -40,26 +40,11 @@ int main(int argc, char **argv) {
 
    int socket_fd = create_socket(client);
 
-    char *string_exit = "KevinMitnick\n";
-    char *pswd = "FreeKevin\n";
-    int counter = 0;
     while(true) {
         char buffer[25];
-        bzero(buffer, sizeof(buffer));
-        if(counter == 0) {
-        	write(socket_fd, string_exit, strlen(string_exit) + 1);
-        	counter++;
-        	sleep(1);
-        	write(socket_fd, pswd, strlen(pswd) + 1);
-        }
-        read(socket_fd, buffer, sizeof(buffer));
-        printf("From server: %s\n", buffer);
-        sleep(1);
-        read(socket_fd, buffer, sizeof(buffer));
-        printf("From server: %s\n", buffer);
-        sleep(1);
-        read(socket_fd, buffer, sizeof(buffer));
-        printf("From server: %s\n", buffer);
+        //example of write to the server:
+        //write(socket_fd, pswd, strlen(pswd) + 1);
+
     	break;
     }
 

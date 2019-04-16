@@ -154,15 +154,11 @@ void parse_grass() {
 const int do_login_server(const char** array) {
 	printf("login\n");
 	fflush(stdout);
-	//check if end by a new line:
-	printf("%s", array);
-	fflush(stdout);
 	if(array == NULL || *array == '\0') {
 		printf("AIE CARAMBA\n");
 		fflush(stdout);
 	}
 	else {
-		//no need to check for the new line as it is put directly in uname
 		for(int i = 0; i < numUsers; i++) {
 			if (strncmp(userlist[i]->uname, array, strlen(userlist[i]->uname)) == 0) {
 				printf("Known User\n");
@@ -171,7 +167,7 @@ const int do_login_server(const char** array) {
 			}
 		}
 	}
-	return -1;
+	return -2;
 }
 
 //directly follow login command
@@ -179,9 +175,10 @@ const int do_login_server(const char** array) {
 //if matches, user authentified
 //password = array[0];
 //send to pipe password and check that exists one waiting password
-int do_pass_server(const char** array, int index) {
+int do_pass_server(const char** array, int index, int client_fd) {
 	printf("pass\n");
 	fflush(stdout);
+
 	if(index < 0 || array == NULL || *array == '\0' ) {
 		printf("AIE CARAMBA\n");
 		fflush(stdout);
@@ -192,22 +189,26 @@ int do_pass_server(const char** array, int index) {
 			printf("Matching user and pass\n");
 			fflush(stdout);
 			if(userlist[index]->isLoggedIn) {
+				write(client_fd, "You are already logged in on another client", 44);
 				return -1;
 			}
 			else{
 				userlist[index]->isLoggedIn = true;
+				write(client_fd, "Log in success", 15);
 				return 1;
 			}
 		}
 	}
+	write(client_fd, "Incorrect credentials", 22);
     return 0;
 }
 
-int do_whoami_server(const char** array, int index) {
+int do_whoami_server(const char** array, int index, int client_fd) {
     printf("whoami\n");
     fflush(stdout);
     UNUSED(array);
     if(index >= 0 && userlist[index]->isLoggedIn) {
+    	write(client_fd, userlist[index]->uname, max_size);
     	return 1;
     }
     //check auth
@@ -215,7 +216,7 @@ int do_whoami_server(const char** array, int index) {
     return 0;
 }
 
-int do_logout_server(const char** array, int index) {
+int do_logout_server(const char** array, int index, int client_fd) {
     printf("logout\n");
     fflush(stdout);
     UNUSED(array);
@@ -223,6 +224,7 @@ int do_logout_server(const char** array, int index) {
     //logout
     if(index >= 0 && userlist[index]->isLoggedIn) {
     	userlist[index]->isLoggedIn = false;
+		write(client_fd, "Loggout success", 16);
     	return 1;
     }
     return 0;
@@ -277,66 +279,29 @@ void client_handler(int client_fd) {
 		read(client_fd, buffer, sizeof(buffer));
 		printf("From client: %s\n", buffer);
 		fflush(stdout);
-		//What to do if the function is do_login
-		username_index = do_login_server(&buffer);
-		printf("index: %d\n", username_index);
 
-
-		int pwd_length = read(client_fd, buffer, max_size);
-		printf("From client: %s\n", buffer);
-		fflush(stdout);
-
-		//What to do if the function is do_pass
-		if(username_index != -1 && username_index != -2) {
-			if(loggedIn) {
-				write(client_fd, "Already logged in", 18);
-			}else{
-				int result = do_pass_server(&buffer, username_index);
-				printf("%d\n", result);
-				fflush(stdout);
-				if(result == 1){
-					write(client_fd, "Log in success", 15);
-					loggedIn = true;
-				}else if(result == -1) {
-					write(client_fd, "You are already logged in on another client", 44);
-				}else {
-					write(client_fd, "Incorrect credentials", 22);
-					username_index = -1;
-				}
-			}
-		}else {
-			write(client_fd, "Incorrect credentials", 22);
-			username_index = -1;
-		}
-
-		sleep(1);
+		//TODO when checking/parsing/dispatching
 		//If username_index is set and loggedIn is false you have to do pass: otherwise trap.
+		//Check that line end by \n
+		//Check if loggedIn
+		//Check if the client is already loggedIn what do we do if pass or login?!?
 
-		//What to do if whoami
-		//EST CE QUE LE FAIT DE RENVOYER LE USERNAME AVEC \N A LA FIN PEUT CAUSER DES PROBLEMES
-		int answer = do_whoami_server("", username_index);
-		if(answer == 1 && loggedIn) {
-			write(client_fd, userlist[username_index]->uname, max_size);
-		} else {
-			write(client_fd, "You are not logged in", 22);
-		}
-
-		sleep(1);
-		if(loggedIn) {
-			do_w_server("", client_fd);
-		}
-		/*
-		sleep(1);
-		answer = do_logout_server("", username_index);
-		if(answer == 1 && loggedIn) {
+		/* FUNCTIONS WHO NEED A SPECIAL HANDLING OF THEIR RETURN
+		int answer = do_logout_server("", username_index, client_fd);
+		if(answer == 1) {
 			loggedIn = false;
 			username_index = -1;
-			write(client_fd, "Loggout success", 16);
-		} else {
-			write(client_fd, "You are not logged in", 22);
 		}
-		*/
+
+		//What to do if the function is do_pass
+		int result = do_pass_server(&buffer, username_index, client_fd);
+		if(result == 1) {
+			loggedIn = true;
+		}else {
+			username_index = -1;
+		}
 		break;
+		*/
 	}
 	close(client_fd);
 }

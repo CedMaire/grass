@@ -146,24 +146,6 @@ bool check_auth() {
   return true;
 }
 
-int do_login(const char** array) {
-    printf("login");
-    //array should be be username newline
-    //user name must be in conf file
-    //send pipe login waiting 
-    return 0;
-}
-
-int do_pass(const char** array) {
-    printf("pass");
-    //directly follow login command
-    //password followed by newline
-    //if matches, user authentified
-    //password = array[0];
-    //send to pipe password and check that exists one waiting password 
-    return 0;
-}
-
 int do_ping(const char** array) {
     printf("ping");
     //does not need authentication
@@ -229,30 +211,6 @@ int do_date(const char** array) {
     UNUSED(array);
     check_auth();
     system(DATE_SHELLCODE);
-    return 0;
-}
-
-int do_whoami(const char** array) {
-    printf("whoami");
-    UNUSED(array);
-    //check auth
-    //currently logged user
-    return 0;
-}
-
-int do_w(const char** array) {
-    printf("w");
-    UNUSED(array);
-    //successful auth
-    //list of each logged in user on a single line space separated
-    return 0;
-}
-
-int do_logout(const char** array) {
-    printf("logout");
-    UNUSED(array);
-    //check authentication
-    //logout
     return 0;
 }
 
