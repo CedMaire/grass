@@ -82,6 +82,16 @@ int do_put(const char** array);
 int do_grep(const char** array);
 int do_date(const char** array);
 int do_exit(const char** array);
+int do_login(const char** array);
+int do_pass(const char** array);
+int do_w(const char** array);
+int do_whoami(const char** array);
+int do_logout(const char** array);
+
+#define MAX_STRING_SIZE 10
+
+char need_fd[4][MAX_STRING_SIZE];
+char need_id[3][MAX_STRING_SIZE];
 
 // STRUCTURES, ENUMERATIONS
 enum error_codes {

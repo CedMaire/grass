@@ -8,6 +8,8 @@
  * d_port: destination port
  */
 void send_file(int fp, int d_port) {
+    UNUSED(fp);
+    UNUSED(d_port);
     // TODO
 }
 
@@ -19,6 +21,9 @@ void send_file(int fp, int d_port) {
  * size: the size (in bytes) of the file to recv
  */
 void recv_file(int fp, int d_port, int size) {
+    UNUSED(fp);
+    UNUSED(d_port);
+    UNUSED(size);
     // TODO
 }
 
@@ -30,10 +35,13 @@ void recv_file(int fp, int d_port, int size) {
  * pattern: an extended regular expressions.
  */
 void search(char *pattern) {
+    UNUSED(pattern);
     // TODO
 }
 
 int main(int argc, char **argv) {
+    UNUSED(argc);
+    UNUSED(argv);
     // TODO:
     // Make a short REPL to send commands to the server
     // Make sure to also handle the special cases of a get and put command
@@ -41,7 +49,7 @@ int main(int argc, char **argv) {
    int socket_fd = create_socket(client);
 
     while(true) {
-        char buffer[25];
+        //char buffer[25];
         //example of write to the server:
         //write(socket_fd, pswd, strlen(pswd) + 1);
 
@@ -90,6 +98,8 @@ int main(int argc, char **argv) {
             if (feedbackTok < 0) {
                 fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_ARGS]);
             } else {
+            /**
+
                 // We execute the corresponding command or print an error if needed.
                 int cmd_nb = -1;
                 for (int i = 0; i < NB_CMD; ++i) {
@@ -124,6 +134,7 @@ int main(int argc, char **argv) {
                 if (cmd_nb < 0) {
                     fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_INVALID_CMD]);
                 }
+            **/
             }
         }
     }

@@ -1,8 +1,6 @@
 #include <grass.h>
 #include <stdio.h>
 
-char* username;
-
 const char* const ERR_MESSAGES[] = {
         "", // no error
         "IO error",
@@ -20,22 +18,17 @@ const char* const SHELL_ERR_MESSAGES[] = {
         "cannot go there", //cd
 };
 
-struct Command shell_cmds[NB_CMD] = {
-        { "login", do_login, 1, "$USERNAME" },
-        { "pass", do_pass, 1, "$PASSWORD" },
-        { "ping", do_ping, 1, "$HOST" },
-        { "ls", do_ls, 0, "" },
-        { "cd", do_cd, 1, "$DIRECTORY" },
-        { "mkdir", do_mkdir, 1, "$DIRECTORY" },
-        { "rm", do_rm, 1, "$NAME" },
-        { "get", do_get, 1, "$FILENAME" },
-        { "put", do_put, 2, "$FILENAME $SIZE" },
-        { "grep", do_grep, 1, "$PATTERN" },
-        { "date", do_date, 0, "" },
-        { "whoami", do_whoami, 0, "" },
-        { "w", do_w, 0, "" },
-        { "logout", do_logout, 0, "" },
-        { "exit", do_exit, 0, "" },
+char need_id[3][MAX_STRING_SIZE] =
+{ "pass",
+  "logout",
+  "whoami"
+};
+
+char need_fd[4][MAX_STRING_SIZE] =
+{ "pass",
+  "logout",
+  "whoami",
+  "w"
 };
 
 /*
@@ -98,22 +91,6 @@ int create_socket(enum mode client_server) {
 }
 
 /*
- * Checks that the number of provided arguments are correct.
- *
- * cmd_nb: the number of the command to check
- * argc: provided number of arguments
- */
-int check_args(int cmd_nb, int argc) {
-    size_t nb_args = shell_cmds[cmd_nb].argc;
-
-    if (argc != (int) nb_args) {
-        return ERR_ARGS;
-    }
-
-    return 0;
-}
-
-/*
  * Splits the input string into the command and all the arguments.
  *
  * input: the input to split
@@ -137,15 +114,7 @@ int tokenize_input(char* input, char** args) {
 
     return i;
 }
-
-/*
- * Checks if one user is authenticated at the moment.
- *
- */
-bool check_auth() {
-  return true;
-}
-
+/**
 int do_ping(const char** array) {
     printf("ping");
     //does not need authentication
@@ -225,3 +194,4 @@ int do_exit(const char** array) {
     }
     return 0;
 }
+**/

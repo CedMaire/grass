@@ -10,6 +10,45 @@ char port[7] = "31337";
 static char* base[32];
 int max_size = 16;
 
+
+struct Command shell_cmds[NB_CMD] = {
+        { "login", do_login, 1, "$USERNAME" },
+        { "pass", do_pass, 1, "$PASSWORD" },
+        { "ping", do_ping, 1, "$HOST" },
+        { "ls", do_ls, 0, "" },
+        { "cd", do_cd, 1, "$DIRECTORY" },
+        { "mkdir", do_mkdir, 1, "$DIRECTORY" },
+        { "rm", do_rm, 1, "$NAME" },
+        { "get", do_get, 1, "$FILENAME" },
+        { "put", do_put, 2, "$FILENAME $SIZE" },
+        { "grep", do_grep, 1, "$PATTERN" },
+        { "date", do_date, 0, "" },
+        { "whoami", do_whoami, 0, "" },
+        { "w", do_w, 0, "" },
+        { "logout", do_logout, 0, "" },
+        { "exit", do_exit, 0, "" },
+};
+
+/*
+ * Checks that the number of provided arguments are correct.
+ *
+ * cmd_nb: the number of the command to check
+ * argc: provided number of arguments
+ */
+int check_args(int cmd_nb, int argc) {
+    size_t nb_args = shell_cmds[cmd_nb].argc;
+
+    if (argc != (int) nb_args) {
+        return ERR_ARGS;
+    }
+
+    return 0;
+}
+
+int check_auth() {
+	return 0;
+}
+
 // Helper function to run commands in unix.
 void run_command(const char* command, int sock) {
 }
@@ -148,19 +187,21 @@ void parse_grass() {
 	fclose(conf);
 }
 
+//#######################CMDS###############################################
+
 //array should be be username newline
 //user name must be in conf file
 //send pipe login waiting
-const int do_login_server(const char** array) {
+const int do_login(const char** array) {
 	printf("login\n");
 	fflush(stdout);
-	if(array == NULL || *array == '\0') {
+	if(array[0] == NULL || *array[0] == '\0') {
 		printf("AIE CARAMBA\n");
 		fflush(stdout);
 	}
 	else {
 		for(int i = 0; i < numUsers; i++) {
-			if (strncmp(userlist[i]->uname, array, strlen(userlist[i]->uname)) == 0) {
+			if (strncmp(userlist[i]->uname, array[0], strlen(userlist[i]->uname)) == 0) {
 				printf("Known User\n");
 				fflush(stdout);
 				return i;
@@ -175,17 +216,25 @@ const int do_login_server(const char** array) {
 //if matches, user authentified
 //password = array[0];
 //send to pipe password and check that exists one waiting password
-int do_pass_server(const char** array, int index, int client_fd) {
+int do_pass(const char** array) {
+	//array[0] = pass
+	//array[1] = clientfd
+	//array[2] = index
+
+	int client_fd = -1;
+    client_fd = atoi(array[1]);
+	int index = -1;
+    index = atoi(array[2]);
 	printf("pass\n");
 	fflush(stdout);
 
-	if(index < 0 || array == NULL || *array == '\0' ) {
+	if(index < 0 || array[0] == NULL || *array[0] == '\0' ) {
 		printf("AIE CARAMBA\n");
 		fflush(stdout);
 	}
 	else {
 		fflush(stdout);
-		if (strncmp(userlist[index]->pass, array, strlen(userlist[index]->pass)-2) == 0) {
+		if (strncmp(userlist[index]->pass, array[0], strlen(userlist[index]->pass)-2) == 0) {
 			printf("Matching user and pass\n");
 			fflush(stdout);
 			if(userlist[index]->isLoggedIn) {
@@ -203,7 +252,13 @@ int do_pass_server(const char** array, int index, int client_fd) {
     return 0;
 }
 
-int do_whoami_server(const char** array, int index, int client_fd) {
+int do_whoami(const char** array) {
+	int client_fd = -1;
+    client_fd = atoi(array[0]);
+	int index = -1;
+    index = atoi(array[1]);
+	//array[0] = clientfd
+	//array[1] = index
     printf("whoami\n");
     fflush(stdout);
     UNUSED(array);
@@ -216,7 +271,13 @@ int do_whoami_server(const char** array, int index, int client_fd) {
     return 0;
 }
 
-int do_logout_server(const char** array, int index, int client_fd) {
+int do_logout(const char** array) {
+	//array[0] = clientfd
+	//array[1] = index
+	int client_fd = -1;
+    client_fd = atoi(array[0]);
+	int index = -1;
+    index = atoi(array[1]);
     printf("logout\n");
     fflush(stdout);
     UNUSED(array);
@@ -230,7 +291,10 @@ int do_logout_server(const char** array, int index, int client_fd) {
     return 0;
 }
 
-int do_w_server(const char** array, int clientfd) {
+int do_w(const char** array) {
+	//array[0] = clientfd
+	int client_fd = -1;
+    client_fd = atoi(array[0]);
     printf("w\n");
     fflush(stdout);
     UNUSED(array);
@@ -258,10 +322,92 @@ int do_w_server(const char** array, int clientfd) {
     }
     printf("%s", buffer);
     fflush(stdout);
-    write(clientfd, buffer, size);
+    write(client_fd, buffer, size);
     return 0;
 }
 
+int do_ping(const char** array) {
+    printf("ping");
+    //does not need authentication
+    //returns unix output of ping $HOST -c 1
+    if (strlen(array[0]) > MAX_PING_LEN) {
+      return 1;
+    }
+    char str[80]; //EXPLOIT ?
+    PING_SHELLCODE(str, array[0]);
+    puts(str);
+    return 0;
+}
+
+
+int do_ls(const char** array) {
+    printf("ls");
+    UNUSED(array);
+    system(LS_SHELLCODE);
+    //check authentication
+
+    return 0;
+}
+
+int do_cd(const char** array) {
+    printf("cd");
+    //authentication
+    //changing current rep
+    //dir = array[0];
+    return 0;
+}
+
+int do_mkdir(const char** array) {
+    printf("mkdir");
+    //authentication
+    //check collision and permissions when create
+    return 0;
+}
+
+int do_rm(const char** array) {
+    printf("rm");
+    //authentication
+    //if exists, checks rights (recursive as works for dir too)
+    //dir = array[0];
+    return 0;
+}
+
+int do_get(const char** array) {
+    printf("get");
+    return 0;
+}
+
+int do_put(const char** array) {
+    printf("put");
+    return 0;
+}
+
+int do_grep(const char** array) {
+    printf("grep");
+    return 0;
+}
+
+int do_date(const char** array) {
+    printf("date");
+    UNUSED(array);
+    check_auth();
+    system(DATE_SHELLCODE);
+    return 0;
+}
+
+int do_exit(const char** array) {
+    printf("exit");
+    UNUSED(array);
+    int err = 0;
+    if (!err) {
+      exit(0);
+    } else {
+      exit(1);
+    }
+    return 0;
+}
+
+//##########################################################################################
 
 void client_handler(int client_fd) {
 	//Check that non-empty before going to pass
@@ -270,19 +416,76 @@ void client_handler(int client_fd) {
 	int username_index = -1;
 	//Check that to determine if logged in
 	bool loggedIn = false;
+	//port used for file transfers
+	int port = -1;
 
 	printf("I'm a new thread!Look at me!\n");
 	char *string_exit = "exit\n";
 	while(true) {
-		char* buffer[max_size];
-		bzero(buffer, sizeof(buffer));
-		read(client_fd, buffer, sizeof(buffer));
-		printf("From client: %s\n", buffer);
+		char* input[max_size];
+		bzero(input, sizeof(input));
+		read(client_fd, input, sizeof(input));
+		printf("From client: %s\n", input);
+		char* cmdAndArgs[MAX_INPUT_LENGTH];
+        memset(cmdAndArgs, 0, MAX_INPUT_LENGTH);
+		int feedbackTok = tokenize_input(input, cmdAndArgs);
+        if (feedbackTok < 0) {
+            fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_ARGS]);
+        } else {
+			int cmd_nb = -1;
+        	for (int i = 0; i < NB_CMD; ++i) {
+            	if (strncmp(cmdAndArgs[0], shell_cmds[i].cname, strlen(shell_cmds[i].cname)) == 0) {
+                	cmd_nb = i;
+                	// We check if we have the correct number of args to call the method.
+     	            int feedback = check_args(cmd_nb, feedbackTok - 1);
+        	        if (feedback) {
+            	        fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[feedback]);
+                	} else {
+                	    const char* args[MAX_INPUT_LENGTH + 1];
+     	                memset(args, 0, MAX_INPUT_LENGTH + 1);
+            	        for (size_t j = 1; j < MAX_PARAM + 1; ++j) {
+                            args[j - 1] = cmdAndArgs[j];
+                        }
+                        int i = 0;
+                        while(need_fd[i]) {
+                            if(strcmp(need_fd[i], shell_cmds[cmd_nb].cname) == 0) {
+    							char  buff[10];
+    							snprintf(buff, sizeof(buff), "%d", client_fd);
+                            	args[feedbackTok-1] = buff;
+                                break;
+                            }
+                            i++;
+                        }
+                        i = 0;
+                        while(need_id[i]) {
+                            if(strcmp(need_id[i], shell_cmds[cmd_nb].cname) == 0) {
+                            	char  buff[10];
+    							snprintf(buff, sizeof(buff), "%d", username_index);
+                            	args[feedbackTok] = buff;
+                                break;
+                            }
+                            i++;
+                        }
+						feedback = (shell_cmds[cmd_nb].fct)(args);
+                        if (feedback) { // Can be FS error or SHELL error.
+                            if (feedback < 0) {
+                                fprintf(stderr, "ERROR FS: %s\n", ERR_MESSAGES[feedback - ERR_FIRST]);
+                            } else {
+                                fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[feedback]);
+                            }
+                        }
+                    }
+                    i = NB_CMD + 1;
+                }
+            }
+            if (cmd_nb < 0) {
+                fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_INVALID_CMD]);
+            }
+        }
 		fflush(stdout);
 
 		//TODO when checking/parsing/dispatching
 		//If username_index is set and loggedIn is false you have to do pass: otherwise trap.
-		//Check that line end by \n
 		//Check if loggedIn
 		//Check if the client is already loggedIn what do we do if pass or login?!?
 
