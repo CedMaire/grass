@@ -19,7 +19,7 @@ const char* const SHELL_ERR_MESSAGES[] = {
         "directory already exists", //mkdir
         "cannot go there", //cd
 };
-
+/*
 struct Command shell_cmds[NB_CMD] = {
         { "login", do_login, 1, "$USERNAME" },
         { "pass", do_pass, 1, "$PASSWORD" },
@@ -37,7 +37,7 @@ struct Command shell_cmds[NB_CMD] = {
         { "logout", do_logout, 0, "" },
         { "exit", do_exit, 0, "" },
 };
-
+*/
 /*
  * Hijack the flow!
  *
@@ -52,7 +52,7 @@ void hijack_flow() {
  *
  * client_server: mode for the socket
  */
-int create_socket(enum mode client_server) {
+int create_socket(enum mode client_server, int port) {
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd == -1) {
         fprintf(stderr, "Socket creation failed!\n");
@@ -66,7 +66,7 @@ int create_socket(enum mode client_server) {
 
     server_address.sin_family = AF_INET;
     server_address.sin_addr.s_addr = client_server == server ? htonl(INADDR_ANY) : inet_addr("127.0.0.1");
-    server_address.sin_port = htons(6969);
+    server_address.sin_port = htons(port);
 
     if (client_server == server) {
         if (bind(socket_fd, (struct sockaddr *) &server_address, sizeof(server_address)) != 0) {
@@ -103,6 +103,7 @@ int create_socket(enum mode client_server) {
  * cmd_nb: the number of the command to check
  * argc: provided number of arguments
  */
+/*
 int check_args(int cmd_nb, int argc) {
     size_t nb_args = shell_cmds[cmd_nb].argc;
 
@@ -112,7 +113,7 @@ int check_args(int cmd_nb, int argc) {
 
     return 0;
 }
-
+*/
 /*
  * Splits the input string into the command and all the arguments.
  *

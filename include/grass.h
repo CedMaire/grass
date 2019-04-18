@@ -68,7 +68,7 @@ enum mode{server, client};
 typedef int (*shell_fct)(const char** array);
 
 void hijack_flow();
-int create_socket(enum mode client_server);
+int create_socket(enum mode client_server, int port);
 int check_args(int cmd_nb, int argc);
 int tokenize_input(char* input, char** args);
 

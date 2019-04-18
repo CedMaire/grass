@@ -49,10 +49,12 @@ void search(char *pattern) {
 }
 
 // Parse the grass.conf file and fill in the global variables
-void parse_grass() {
+int parse_grass() {
 	FILE* conf;
 	if ((conf = fopen("grass.conf", "r")) == NULL) {
 		fprintf(stderr, "grass.conf not found\n");
+		fflush(stdout);
+		return 0;
 	} else {
 		printf("File loaded\n");
 	}
@@ -69,6 +71,8 @@ void parse_grass() {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "base not found\n");
+				fflush(stdout);
+				return 0;
 			}
 			strncpy(base, token, 32);
 			printf("base: %s\n", token);
@@ -77,6 +81,8 @@ void parse_grass() {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "port not found\n");
+				fflush(stdout);
+				return 0;
 			}
 			strncpy(port, token, 7);
 			printf("port: %s\n", token);
@@ -91,10 +97,14 @@ void parse_grass() {
 	//Set the offset just before the users
 	if (fseek(conf, offset_of_users - 32, SEEK_SET) != 0) {
 		fprintf(stderr, "error when counting the users\n");
+		fflush(stdout);
+		return 0;
 	}
 
 	if ((userlist = calloc(nbr_users, sizeof(struct User*))) == NULL) {
 		fprintf(stderr, "allocation error\n");
+		fflush(stdout);
+		return 0;
 	}
 
 	//Fill the userlist
@@ -107,16 +117,22 @@ void parse_grass() {
 			struct User *u;
 			if ((u = calloc(1, sizeof(struct User))) == NULL) {
 				fprintf(stderr, "allocation error\n");
+				fflush(stdout);
+				return 0;
 			}
 
 			//Fill the username
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "user not found, wrong format\n");
+				fflush(stdout);
+				return 0;
 			}
 			const char* username;
 			if ((username = calloc(max_size, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
+				fflush(stdout);
+				return 0;
 			}
 			strncpy(username, token, max_size);
 			printf("user: %s ", token);
@@ -125,10 +141,14 @@ void parse_grass() {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "password not found, wrong format\n");
+				fflush(stdout);
+				return 0;
 			}
 			const char* password;
 			if ((password = calloc(max_size, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
+				fflush(stdout);
+				return 0;
 			}
 			strncpy(password, token, max_size);
 
@@ -136,6 +156,7 @@ void parse_grass() {
 			u->pass = password;
 			u->isLoggedIn = false;
 			printf("pwd: %s\n", token);
+			fflush(stdout);
 			userlist[userID] = u;
 
 			userID++;
@@ -144,8 +165,11 @@ void parse_grass() {
 	numUsers = userID;
 
 	printf("End of conf file reached\n");
+	fflush(stdout);
 
 	fclose(conf);
+
+	return 1;
 }
 
 //array should be be username newline
@@ -154,7 +178,7 @@ void parse_grass() {
 const int do_login_server(const char** array) {
 	printf("login\n");
 	fflush(stdout);
-	if(array == NULL || *array == '\0') {
+	if(array == NULL) {
 		printf("AIE CARAMBA\n");
 		fflush(stdout);
 	}
@@ -179,7 +203,7 @@ int do_pass_server(const char** array, int index, int client_fd) {
 	printf("pass\n");
 	fflush(stdout);
 
-	if(index < 0 || array == NULL || *array == '\0' ) {
+	if(index < 0 || array == NULL) {
 		printf("AIE CARAMBA\n");
 		fflush(stdout);
 	}
@@ -262,6 +286,74 @@ int do_w_server(const char** array, int clientfd) {
     return 0;
 }
 
+int do_get_server(const char** array, int client_fd, pthread_t thread, int port) {
+	printf("get\n");
+	fflush(stdout);
+
+	if(port >= 0) {
+		pthread_cancel(thread);
+	}
+
+	//Load file
+	if(array == NULL) {
+		printf("AIE CARAMBA");
+		fflush(stdout);
+	} else {
+		FILE* file;
+		if ((file = fopen(*array, "r")) == NULL) {
+			fprintf(stderr, "file not found\n");
+			fflush(stdout);
+			return 0;
+		} else {
+			printf("File loaded\n");
+			fflush(stdout);
+		}
+		//Calculate size
+		int size=0;
+		fseek (file,0,SEEK_END);
+		size= ftell (file);
+		if (size!=-1) {
+			printf("Size: %d\n" ,size);
+			fflush(stdout);
+
+		} else {
+			printf("Not able to calculate size\n");
+			fflush(stdout);
+			return 0;
+		}
+
+		//Reset the pointer to the beginning of the file
+		if (fseek(file, 0, SEEK_SET) != 0) {
+			fprintf(stderr, "enable to reset the offset\n");
+			fflush(stdout);
+			return 0;
+		}
+
+		//DO WE SEND PACKET SIZE OR PACKET SIZE + 1 (SIZE + \0)
+		//Send the size and the port to the client
+		//TODO
+
+		//Load the file in the buffer (hope the file isn't too large otherwise it could be slow)
+		char* packet[size + 1];
+		int size_r = fread(packet, sizeof(char), size, file);
+		printf("%s\n",packet);
+		if (ferror(file) != 0 || size_r != size) {
+			fputs("Error reading file\n", stderr);
+		}else{
+			packet[size] = '\0';
+		}
+		fclose(file);
+
+
+		//Write the file to the new port
+		int socket_fd = create_socket(server, port);
+		//DO WE SEND PACKET SIZE OR PACKET SIZE + 1 (SIZE + \0)
+		write(socket_fd, packet, size);
+		close(socket_fd);
+
+	}
+	return 0;
+}
 
 void client_handler(int client_fd) {
 	//Check that non-empty before going to pass
@@ -270,6 +362,10 @@ void client_handler(int client_fd) {
 	int username_index = -1;
 	//Check that to determine if logged in
 	bool loggedIn = false;
+
+	//Variable for get/put
+	pthread_t thread;
+	int port;
 
 	printf("I'm a new thread!Look at me!\n");
 	char *string_exit = "exit\n";
@@ -307,11 +403,14 @@ void client_handler(int client_fd) {
 }
 
 int main() {
-
-	parse_grass();
+	char* t = "coucou.txt";
+	do_get_server(&t,0, 0,0);
+	if (parse_grass() == 0) {
+		exit(EXIT_SUCCESS);;
+	}
 
 	//Main socket
-	int socket_fd = create_socket(server);
+	int socket_fd = create_socket(server, 1337);
 	if (socket_fd < 0) {
 		fprintf(stderr, "Exit program because of error.\n");
 	}
