@@ -136,6 +136,6 @@ struct Command {
     const char* params;
 };
 
-extern struct Command shell_cmds[NB_CMD];
+//extern struct Command shell_cmds[NB_CMD];
 
 #endif

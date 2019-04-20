@@ -52,6 +52,55 @@ int check_auth(struct User* user, int client_fd) {
 	}
 }
 
+/*
+ * Executes the corresponding function with the given arguments.
+ *
+ * feedbackTok: the feedback of the "tokenize_input" function
+ * cmd_and_args: where to store the command and its argument after parsing
+ */
+int exec_function(int feedbackTok, char** cmd_and_args) {
+    // We execute the corresponding command or print an error if needed.
+    int cmd_nb = -1;
+    for (int i = 0; i < NB_CMD; ++i) {
+        if (strncmp(cmd_and_args[0], shell_cmds[i].cname, strlen(shell_cmds[i].cname)) == 0) {
+            cmd_nb = i;
+
+            // We check if we have the correct number of args to call the method.
+            int feedback = check_args(cmd_nb, feedbackTok - 1);
+            if (feedback) {
+                fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[feedback]);
+                return feedback;
+            } else {
+
+                const char* args[MAX_INPUT_LENGTH + 1];
+                memset(args, 0, MAX_INPUT_LENGTH + 1);
+                for (size_t j = 1; j < MAX_PARAM + 1; ++j) {
+                    args[j - 1] = cmd_and_args[j];
+                }
+
+                feedback = (shell_cmds[cmd_nb].fct)(args);
+                if (feedback) { // Can be FS error or SHELL error.
+                    if (feedback < 0) {
+                        fprintf(stderr, "ERROR FS: %s\n", ERR_MESSAGES[feedback - ERR_FIRST]);
+                        return feedback - ERR_FIRST;
+                    } else {
+                        fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[feedback]);
+                        return feedback;
+                    }
+                }
+            }
+
+            i = NB_CMD + 1;
+        }
+    }
+    if (cmd_nb < 0) {
+        fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_INVALID_CMD]);
+        return ERR_INVALID_CMD;
+    }
+
+    return 0;
+}
+
 // Helper function to run commands in unix.
 void run_command(const char* command, int sock) {
 }
