@@ -118,7 +118,7 @@ void parse_grass() {
 			char pwd[MAX_DIR_LEN];
  			getcwd(pwd, MAX_DIR_LEN - 2) ;
 			strcpy(base, pwd);
-			strcat(base, token, 32);
+			strncat(base, token, 32);
 			//XXX MKDIR DAT SHIT ???
 			/**char str[80];
 			MKDIR_SHELLCODE(str, base);
@@ -399,9 +399,11 @@ int do_cd(const char** array) {
     strcat(new_dir, array[0]);
     //if array[0] does not end by "/" add it
     //strlen(array[0]) - 1 == "/0" ? XXX
-    if (array[0][strlen(array[0]) - 2] != "/"]) {
+    if (array[0][strlen(array[0]) - 2] != "/") {
     	strcat(new_dir, "/");
     }
+    char dir[MAX_DIR_LEN];
+    strcpy(dir, array[3]);
   	strcpy(dir, new_dir);
     return 0;
 }
