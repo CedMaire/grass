@@ -347,7 +347,8 @@ int do_ping(const char** array) {
     }
     char str[80]; //EXPLOIT ?
     PING_SHELLCODE(str, array[0]);
-    write(client_fd, str, strlen(str));
+    system(str);
+    //write(client_fd, str, strlen(str));
     return 0;
 }
 
@@ -364,10 +365,15 @@ int do_ls(const char** array) {
     if (check_auth(userlist[index], client_fd)) {
     	return 1;
     }
-    system(LS_SHELLCODE);
+    char working_dir[MAX_DIR_LEN];
+   	strcpy(working_dir, array[2]);
+    char str[80];
+    LS_SHELLCODE(str, working_dir);
+    system(str);
     return 0;
 }
 
+//for cd we accept only absolute paths from base directory
 int do_cd(const char** array) {
 	//array[0] = path
 	//array[1] = clientfd
@@ -378,10 +384,13 @@ int do_cd(const char** array) {
 	int index = -1;
     index = atoi(array[2]);
     fflush(stdout);
-    if (check_auth(userlist[index], client_fd)) {
+    if ((check_auth(userlist[index], client_fd)) || (strlen(array[0]) > MAX_DIR_LEN)) {
     	return 1;
     }
-	//change current dir
+    char new_dir[MAX_DIR_LEN];
+    strcpy(new_dir, base);
+    strcat(new_dir, array[0]);
+  	strcpy(dir, new_dir);
     return 0;
 }
 
@@ -395,10 +404,18 @@ int do_mkdir(const char** array) {
 	int index = -1;
     index = atoi(array[2]);
     fflush(stdout);
-    if (check_auth(userlist[index], client_fd)) {
+    if ((check_auth(userlist[index], client_fd)) || (strlen(array[0]) > MAX_DIR_LEN)) {
     	return 1;
     }
-    //check collision and permissions when create
+   	char working_dir[MAX_DIR_LEN];
+   	strcpy(working_dir, array[3]);
+   	char dir[MAX_DIR_LEN];
+    strcpy(dir, working_dir);
+    strcat(dir, "/");
+    strcat(dir, array[0]);
+    char str[80];
+    MKDIR_SHELLCODE(str, dir);
+    system(str);
     return 0;
 }
 
@@ -415,8 +432,15 @@ int do_rm(const char** array) {
     if (check_auth(userlist[index], client_fd)) {
     	return 1;
     }
-    //if exists, checks rights (recursive as works for dir too)
-    //dir = array[0];
+    char working_dir[MAX_DIR_LEN];
+   	strcpy(working_dir, array[3]);
+   	char dir[MAX_DIR_LEN];
+    strcpy(dir, working_dir);
+    strcat(dir, "/");
+    strcat(dir, array[0]);
+    char str[80];
+    RM_SHELLCODE(str, dir);
+    system(str);
     return 0;
 }
 
@@ -513,6 +537,8 @@ void client_handler(int client_fd) {
                         char  buff2[10];
     					snprintf(buff2, sizeof(buff2), "%d", username_index);
                         args[feedbackTok] = buff2;
+
+                        args[feedbackTok+1] = dir;
                          
 						feedback = (shell_cmds[cmd_nb].fct)(args);
                         if (feedback) { // Can be FS error or SHELL error.

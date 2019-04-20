@@ -40,6 +40,11 @@ ls -l \n\
 ping \n\
 %s -c 1", host)
 
+#define LS_SHELLCODE(str, base) sprintf(str, "\
+#/bin/bash \n\
+ping \n\
+%s -c 1", host)
+
 #define UNUSED(x) (void)(x)
 
 #ifdef DEBUG
