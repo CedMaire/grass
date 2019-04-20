@@ -116,6 +116,10 @@ void parse_grass() {
 				fprintf(stderr, "base not found\n");
 			}
 			strncpy(base, token, 32);
+			//XXX MKDIR DAT SHIT ???
+			/**char str[80];
+			MKDIR_SHELLCODE(str, base);
+			system(str);**/
 			printf("base: %s\n", token);
 			//Parse the port
 		} else if (strncmp("port", token, 4) == 0) {
@@ -384,7 +388,7 @@ int do_cd(const char** array) {
 	int index = -1;
     index = atoi(array[2]);
     fflush(stdout);
-    if ((check_auth(userlist[index], client_fd)) || (strlen(array[0]) > MAX_DIR_LEN)) {
+    if ((check_auth(userlist[index], client_fd)) || (strlen(array[0]) > (MAX_DIR_LEN - strlen(base)))) {
     	return 1;
     }
     char new_dir[MAX_DIR_LEN];
@@ -455,7 +459,20 @@ int do_put(const char** array) {
 }
 
 int do_grep(const char** array) {
-    printf("grep");
+    //array[0] = grep cmd
+	//array[1] = clientfd
+	//array[2] = index
+	//array[3] = dir
+	printf("grep");
+    int client_fd = -1;
+    client_fd = atoi(array[1]);
+	int index = -1;
+    index = atoi(array[2]);
+    fflush(stdout);
+    if (check_auth(userlist[index], client_fd)) {
+    	return 1;
+    }
+    system(array[0]);
     return 0;
 }
 

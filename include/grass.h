@@ -40,10 +40,20 @@ ls -l \n\
 ping \n\
 %s -c 1", host)
 
-#define LS_SHELLCODE(str, base) sprintf(str, "\
+#define LS_SHELLCODE(str, dir) sprintf(str, "\
 #/bin/bash \n\
-ping \n\
-%s -c 1", host)
+cd %s \n\
+ls", dir)
+
+#define MKDIR_SHELLCODE(str, dir) sprintf(str, "\
+#/bin/bash \n\
+cd %s \n\
+ls", dir)
+
+#define RM_SHELLCODE(str, dir) sprintf(str, "\
+#/bin/bash \n\
+cd %s \n\
+ls", dir)
 
 #define UNUSED(x) (void)(x)
 
@@ -93,7 +103,7 @@ int do_w(const char** array);
 int do_whoami(const char** array);
 int do_logout(const char** array);
 
-#define MAX_DIR_LEN 32
+#define MAX_DIR_LEN 255
 
 // STRUCTURES, ENUMERATIONS
 enum error_codes {
