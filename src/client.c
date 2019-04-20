@@ -38,19 +38,19 @@ int main(int argc, char **argv) {
     // Make a short REPL to send commands to the server
     // Make sure to also handle the special cases of a get and put command
 
-   int socket_fd = create_socket(client);
+   int socket_fd = create_socket(client, 1337);
 
-    char *string_exit = "exit\n";
     while(true) {
-        char buffer[16];
-        bzero(buffer, sizeof(buffer));
-        write(socket_fd, string_exit, strlen(string_exit) + 1);
-        sleep(2);
+        char buffer[25];
+        //example of write to the server:
+        //write(socket_fd, pswd, strlen(pswd) + 1);
+
+    	break;
     }
 
     fflush(stdout);
     close(socket_fd);
-
+    /*
     // Simple REPL.
     while (!feof(stdin) && !ferror(stdin)) {
         printf(SHELL_PROMPT);
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
                 }
             }
         }
-    }
+    }*/
 
     exit(EXIT_SUCCESS);
 }

@@ -68,12 +68,10 @@ enum mode{server, client};
 typedef int (*shell_fct)(const char** array);
 
 void hijack_flow();
-int create_socket(enum mode client_server);
+int create_socket(enum mode client_server, int port);
 int check_args(int cmd_nb, int argc);
 int tokenize_input(char* input, char** args);
 
-int do_login(const char** array);
-int do_pass(const char** array);
 int do_ping(const char** array);
 int do_ls(const char** array);
 int do_cd(const char** array);
@@ -83,9 +81,6 @@ int do_get(const char** array);
 int do_put(const char** array);
 int do_grep(const char** array);
 int do_date(const char** array);
-int do_whoami(const char** array);
-int do_w(const char** array);
-int do_logout(const char** array);
 int do_exit(const char** array);
 
 // STRUCTURES, ENUMERATIONS
