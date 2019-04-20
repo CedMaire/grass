@@ -1,5 +1,4 @@
 #include <grass.h>
-#include <stdio.h>
 
 const char* const ERR_MESSAGES[] = {
         "", // no error
@@ -11,25 +10,11 @@ const char* const ERR_MESSAGES[] = {
 const char* const SHELL_ERR_MESSAGES[] = {
         "", // no error
         "invalid command",
-        "wrong number of arguments"
-};
-
-struct Command shell_cmds[NB_CMD] = {
-        { "login", do_login, 1, "$USERNAME" },
-        { "pass", do_pass, 1, "$PASSWORD" },
-        { "ping", do_ping, 1, "$HOST" },
-        { "ls", do_ls, 0, "" },
-        { "cd", do_cd, 1, "$DIRECTORY" },
-        { "mkdir", do_mkdir, 1, "$DIRECTORY" },
-        { "rm", do_rm, 1, "$NAME" },
-        { "get", do_get, 1, "$FILENAME" },
-        { "put", do_put, 2, "$FILENAME $SIZE" },
-        { "grep", do_grep, 1, "$PATTERN" },
-        { "date", do_date, 0, "" },
-        { "whoami", do_whoami, 0, "" },
-        { "w", do_w, 0, "" },
-        { "logout", do_logout, 0, "" },
-        { "exit", do_exit, 0, "" },
+        "wrong number of arguments",
+        "user not authentified", //CHECK_AUTH()
+        "file/directory does not exist", //rm
+        "directory already exists", //mkdir
+        "cannot go there", //cd
 };
 
 /*
@@ -75,7 +60,7 @@ int create_socket(enum mode client_server) {
             return -1;
         } else {
             printf("Listening...\n");
-        } 
+        }
     } else if (client_server == client) {
         if (connect(socket_fd, (struct sockaddr *) &server_address, sizeof(server_address)) != 0) {
             fprintf(stderr, "Connection failed!\n");
@@ -89,22 +74,6 @@ int create_socket(enum mode client_server) {
 
     fflush(stdout);
     return socket_fd;
-}
-
-/*
- * Checks that the number of provided arguments are correct.
- *
- * cmd_nb: the number of the command to check
- * argc: provided number of arguments
- */
-int check_args(int cmd_nb, int argc) {
-    size_t nb_args = shell_cmds[cmd_nb].argc;
-
-    if (argc != (int) nb_args) {
-        return ERR_ARGS;
-    }
-
-    return 0;
 }
 
 /*
@@ -221,7 +190,7 @@ int exec_function(int feedbackTok, char** cmd_and_args) {
 
     return 0;
 }
-
+/**
 int do_login(const char** array) {
     printf("login");
     return 0;
@@ -234,26 +203,46 @@ int do_pass(const char** array) {
 
 int do_ping(const char** array) {
     printf("ping");
+    //does not need authentication
+    //returns unix output of ping $HOST -c 1
+    if (strlen(array[0]) > MAX_PING_LEN) {
+      return 1;
+    }
+    char str[80]; //EXPLOIT ?
+    PING_SHELLCODE(str, array[0]);
+    puts(str);
     return 0;
 }
 
 int do_ls(const char** array) {
     printf("ls");
+    UNUSED(array);
+    system(LS_SHELLCODE);
+    //check authentication
+
     return 0;
 }
 
 int do_cd(const char** array) {
     printf("cd");
+    //authentication
+    //changing current rep
+    //dir = array[0];
     return 0;
 }
 
 int do_mkdir(const char** array) {
     printf("mkdir");
+    //authentication
+    //check collision and permissions when create
     return 0;
 }
 
 int do_rm(const char** array) {
     printf("rm");
+    //authentication
+    //if exists, checks rights (recursive as works for dir too)
+    //dir = array[0];
     return 0;
 }
 
@@ -274,25 +263,21 @@ int do_grep(const char** array) {
 
 int do_date(const char** array) {
     printf("date");
-    return 0;
-}
-
-int do_whoami(const char** array) {
-    printf("whoami");
-    return 0;
-}
-
-int do_w(const char** array) {
-    printf("w");
-    return 0;
-}
-
-int do_logout(const char** array) {
-    printf("logout");
+    UNUSED(array);
+    check_auth();
+    system(DATE_SHELLCODE);
     return 0;
 }
 
 int do_exit(const char** array) {
     printf("exit");
+    UNUSED(array);
+    int err = 0;
+    if (!err) {
+      exit(0);
+    } else {
+      exit(1);
+    }
     return 0;
 }
+**/

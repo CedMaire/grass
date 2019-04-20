@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -25,6 +26,40 @@
 #define SPACE_CHAR ' '
 #define SPACE " "
 #define PATH_TOKEN '/'
+
+#define DATE_SHELLCODE "\
+#/bin/bash \n\
+date \n\
+"
+
+#define MAX_PING_LEN (57) //80 - 22 - 1
+#define PING_SHELLCODE(str, host) sprintf(str, "\
+#/bin/bash \n\
+ping \n\
+%s -c 1", host)
+
+#define LS_SHELLCODE(str, dir, base) sprintf(str, "\
+#/bin/bash \n\
+cd %s \n\
+ls \n\
+cd %s", dir, base)
+
+#define MKDIR_SHELLCODE(str, dir) sprintf(str, "\
+#/bin/bash \n\
+mkdir %s \n\
+", dir)
+
+#define RMDIR_SHELLCODE(str, dir) sprintf(str, "\
+#/bin/bash \n\
+rm -r %s \n\
+", dir)
+
+#define RMFILE_SHELLCODE(str, dir) sprintf(str, "\
+#/bin/bash \n\
+rm %s \n\
+", dir)
+
+#define UNUSED(x) (void)(x)
 
 #ifdef DEBUG
 #define debug_print(fmt, ...) \
@@ -58,8 +93,6 @@ int tokenize_input(char* input, char** args);
 int parse_shell_input(char* input, char** cmd_and_args);
 int exec_function(int feedbackTok, char** cmd_and_args);
 
-int do_login(const char** array);
-int do_pass(const char** array);
 int do_ping(const char** array);
 int do_ls(const char** array);
 int do_cd(const char** array);
@@ -69,10 +102,14 @@ int do_get(const char** array);
 int do_put(const char** array);
 int do_grep(const char** array);
 int do_date(const char** array);
-int do_whoami(const char** array);
-int do_w(const char** array);
-int do_logout(const char** array);
 int do_exit(const char** array);
+int do_login(const char** array);
+int do_pass(const char** array);
+int do_w(const char** array);
+int do_whoami(const char** array);
+int do_logout(const char** array);
+
+#define MAX_DIR_LEN 255
 
 // STRUCTURES, ENUMERATIONS
 enum error_codes {
