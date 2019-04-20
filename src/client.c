@@ -60,6 +60,8 @@ int main(int argc, char **argv) {
         if (fgets(input, MAX_INPUT_LENGTH + 1, stdin) == NULL || strlen(input) < 2) {
             fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_INVALID_CMD]);
         } else {
+            //printf("Got input: %s", input);
+            //printf("Got length: %lu", strlen(input));
             // We replace the last "\n" with the EOL character.
             char* ending = strrchr(input, ENTER);
             if (ending != NULL) {

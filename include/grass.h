@@ -4,6 +4,7 @@
 #define DEBUG true
 
 #include <string.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -16,6 +17,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #define NB_CMD (15)
 #define MAX_INPUT_LENGTH (255)

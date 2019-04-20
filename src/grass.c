@@ -48,8 +48,21 @@ int create_socket(enum mode client_server) {
     server_address.sin_port = htons(6969);
 
     if (client_server == server) {
-        if (bind(socket_fd, (struct sockaddr *) &server_address, sizeof(server_address)) != 0) {
+        fcntl(socket_fd, F_SETFL, O_NONBLOCK);
+        int sock_opt = 1;
+        if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const char*) &sock_opt, sizeof(sock_opt)) < 0 ||
+            setsockopt(socket_fd, SOL_SOCKET, SO_REUSEPORT, (const char*) &sock_opt, sizeof(sock_opt)) < 0) {
+            fprintf(stderr, "Socket options {SO_REUSEADDR, SO_REUSEPORT} failed!\n");
+            return -1;
+        }
+
+        int bind_error = -1;
+        //printf("Bind_error: %d", bind_error);
+        fflush(stdout);
+        bind_error = bind(socket_fd, (struct sockaddr *) &server_address, sizeof(server_address));
+        if (bind_error != 0) {
             fprintf(stderr, "Socket binding failed!\n");
+            fprintf(stderr, "Error Number: %d", errno);
             return -1;
         } else {
             printf("Socket bound...\n");

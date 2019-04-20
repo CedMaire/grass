@@ -8,6 +8,7 @@ char port[7] = "31337";
 static char* base[MAX_DIR_LEN];
 int max_size = 16;
 
+static volatile bool keep_running = true;
 
 struct Command shell_cmds[NB_CMD] = {
         { "login", do_login, 1, "$USERNAME" },
@@ -26,6 +27,10 @@ struct Command shell_cmds[NB_CMD] = {
         { "logout", do_logout, 0, "" },
         { "exit", do_exit, 0, "" },
 };
+
+void stop_running() {
+    keep_running = false;
+}
 
 /*
  * Checks that the number of provided arguments are correct.
@@ -551,11 +556,14 @@ int do_exit(const char** array) {
 	//array[1] = index
 	//array[2] = dir
     int err = do_logout(array);
-    if (!err) {
+    int client_fd = atoi(array[0]);
+    close(client_fd);
+    pthread_exit(0);
+/*    if (!err) {
       exit(0);
     } else {
       exit(1);
-    }
+    }*/
     return 0;
 }
 
@@ -656,6 +664,7 @@ void client_handler(int client_fd) {
 }
 
 int main() {
+    signal(SIGINT, stop_running);
 
 	parse_grass();
 
@@ -663,27 +672,26 @@ int main() {
 	int socket_fd = create_socket(server);
 	if (socket_fd < 0) {
 		fprintf(stderr, "Exit program because of error.\n");
+        exit(EXIT_FAILURE);
 	}
 
 	//Wait for clients
-	while(1){
+	while(keep_running){
 		//Create socket for a connecting client
 		struct sockaddr_in client_address;
 		bzero(&client_address, sizeof(client_address));
 		int client_struct_length = sizeof(client_address);
 		int connection_fd = accept(socket_fd, (struct sockaddr *) &client_address, &client_struct_length);
-		if (connection_fd < 0) {
-			fprintf(stderr, "Accepting failed!\n");
-		} else {
-			printf("Client accepted...\n");
-		}
+		if (connection_fd >= 0) {
+            printf("Client accepted...\n");
+            //Create new thread for the client
+            pthread_t child;
 
-		//Create new thread for the client
-		pthread_t child;
-
-		int err = pthread_create(&child,NULL,client_handler,connection_fd);
-		if(err != 0) {
-			fprintf(stderr, "Fail to open a new thread!\n");
+            int err = pthread_create(&child,NULL,client_handler,connection_fd);
+            if(err != 0) {
+                fprintf(stderr, "Fail to open a new thread!\n");
+                close(connection_fd);
+            }
 		}
 	}
 
