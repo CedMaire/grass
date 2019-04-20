@@ -4,9 +4,11 @@
 #define DEBUG true
 
 #include <string.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -15,6 +17,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #define NB_CMD (15)
 #define MAX_INPUT_LENGTH (255)
@@ -85,10 +88,12 @@ enum mode{server, client};
 // FUNCTIONS
 typedef int (*shell_fct)(const char** array);
 
-void hijack_flow();
+void hijack_flow(void);
 int create_socket(enum mode client_server);
 int check_args(int cmd_nb, int argc);
 int tokenize_input(char* input, char** args);
+int parse_shell_input(char* input, char** cmd_and_args);
+int exec_function(int feedbackTok, char** cmd_and_args);
 
 int do_ping(const char** array);
 int do_ls(const char** array);
@@ -133,6 +138,6 @@ struct Command {
     const char* params;
 };
 
-extern struct Command shell_cmds[NB_CMD];
+//extern struct Command shell_cmds[NB_CMD];
 
 #endif

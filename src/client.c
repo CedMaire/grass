@@ -1,5 +1,4 @@
 #include <grass.h>
-#include <netinet/in.h>
 
 /*
  * Send a file to the server as its own thread
@@ -46,12 +45,12 @@ int main(int argc, char **argv) {
     // Make a short REPL to send commands to the server
     // Make sure to also handle the special cases of a get and put command
 
-   int socket_fd = create_socket(client);
+    int socket_fd = create_socket(client);
 
     //close(socket_fd);
 
     // Simple REPL.
-    while (!feof(stdin) && !ferror(stdin)) { 
+    while (!feof(stdin) && !ferror(stdin)) {
         printf(SHELL_PROMPT);
         fflush(stdout);
 
@@ -61,6 +60,8 @@ int main(int argc, char **argv) {
         if (fgets(input, MAX_INPUT_LENGTH + 1, stdin) == NULL || strlen(input) < 2) {
             fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_INVALID_CMD]);
         } else {
+            //printf("Got input: %s", input);
+            //printf("Got length: %lu", strlen(input));
             // We replace the last "\n" with the EOL character.
             char* ending = strrchr(input, ENTER);
             if (ending != NULL) {
