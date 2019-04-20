@@ -30,30 +30,33 @@
 #/bin/bash \n\
 date \n\
 "
-#define LS_SHELLCODE "\
-#/bin/bash \n\
-ls -l \n\
-"
+
 #define MAX_PING_LEN (57) //80 - 22 - 1
 #define PING_SHELLCODE(str, host) sprintf(str, "\
 #/bin/bash \n\
 ping \n\
 %s -c 1", host)
 
-#define LS_SHELLCODE(str, dir) sprintf(str, "\
+#define LS_SHELLCODE(str, dir, base) sprintf(str, "\
 #/bin/bash \n\
 cd %s \n\
-ls", dir)
+ls \n\
+cd %s", dir, base)
 
 #define MKDIR_SHELLCODE(str, dir) sprintf(str, "\
 #/bin/bash \n\
-cd %s \n\
-ls", dir)
+mkdir %s \n\
+", dir)
 
-#define RM_SHELLCODE(str, dir) sprintf(str, "\
+#define RMDIR_SHELLCODE(str, dir) sprintf(str, "\
 #/bin/bash \n\
-cd %s \n\
-ls", dir)
+rm -r %s \n\
+", dir)
+
+#define RMFILE_SHELLCODE(str, dir) sprintf(str, "\
+#/bin/bash \n\
+rm %s \n\
+", dir)
 
 #define UNUSED(x) (void)(x)
 

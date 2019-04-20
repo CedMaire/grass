@@ -115,7 +115,10 @@ void parse_grass() {
 			if (token == NULL) {
 				fprintf(stderr, "base not found\n");
 			}
-			strncpy(base, token, 32);
+			char pwd[MAX_DIR_LEN];
+ 			getcwd(pwd, MAX_DIR_LEN - 2) ;
+			strcpy(base, pwd);
+			strcat(base, token, 32);
 			//XXX MKDIR DAT SHIT ???
 			/**char str[80];
 			MKDIR_SHELLCODE(str, base);
@@ -372,7 +375,7 @@ int do_ls(const char** array) {
     char working_dir[MAX_DIR_LEN];
    	strcpy(working_dir, array[2]);
     char str[80];
-    LS_SHELLCODE(str, working_dir);
+    LS_SHELLCODE(str, working_dir, base);
     system(str);
     return 0;
 }
@@ -394,6 +397,11 @@ int do_cd(const char** array) {
     char new_dir[MAX_DIR_LEN];
     strcpy(new_dir, base);
     strcat(new_dir, array[0]);
+    //if array[0] does not end by "/" add it
+    //strlen(array[0]) - 1 == "/0" ? XXX
+    if (array[0][strlen(array[0]) - 2] != "/"]) {
+    	strcat(new_dir, "/");
+    }
   	strcpy(dir, new_dir);
     return 0;
 }
@@ -413,12 +421,11 @@ int do_mkdir(const char** array) {
     }
    	char working_dir[MAX_DIR_LEN];
    	strcpy(working_dir, array[3]);
-   	char dir[MAX_DIR_LEN];
-    strcpy(dir, working_dir);
-    strcat(dir, "/");
-    strcat(dir, array[0]);
-    char str[80];
-    MKDIR_SHELLCODE(str, dir);
+   	char dir_to_mk[MAX_DIR_LEN];
+    strcpy(dir_to_mk, working_dir);
+    strcat(dir_to_mk, array[0]);
+    char str[MAX_DIR_LEN + 20]; //XXX
+    MKDIR_SHELLCODE(str, dir_to_mk);
     system(str);
     return 0;
 }
@@ -438,12 +445,12 @@ int do_rm(const char** array) {
     }
     char working_dir[MAX_DIR_LEN];
    	strcpy(working_dir, array[3]);
-   	char dir[MAX_DIR_LEN];
-    strcpy(dir, working_dir);
-    strcat(dir, "/");
-    strcat(dir, array[0]);
+   	char to_rm[MAX_DIR_LEN];
+    strcpy(to_rm, working_dir);
+    strcat(to_rm, array[0]);
     char str[80];
-    RM_SHELLCODE(str, dir);
+    RMFILE_SHELLCODE(str, to_rm);
+    //XXX RM dir
     system(str);
     return 0;
 }
