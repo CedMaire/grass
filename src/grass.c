@@ -18,19 +18,6 @@ const char* const SHELL_ERR_MESSAGES[] = {
         "cannot go there", //cd
 };
 
-char need_id[3][MAX_STRING_SIZE] =
-{ "pass",
-  "logout",
-  "whoami"
-};
-
-char need_fd[4][MAX_STRING_SIZE] =
-{ "pass",
-  "logout",
-  "whoami",
-  "w"
-};
-
 /*
  * Hijack the flow!
  *

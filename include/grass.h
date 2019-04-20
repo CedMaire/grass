@@ -88,10 +88,7 @@ int do_w(const char** array);
 int do_whoami(const char** array);
 int do_logout(const char** array);
 
-#define MAX_STRING_SIZE 10
-
-char need_fd[4][MAX_STRING_SIZE];
-char need_id[3][MAX_STRING_SIZE];
+#define MAX_DIR_LEN 32
 
 // STRUCTURES, ENUMERATIONS
 enum error_codes {

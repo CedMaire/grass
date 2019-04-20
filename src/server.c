@@ -1,13 +1,14 @@
 #include <grass.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <netinet/in.h>
 
 static struct User **userlist;
 static int numUsers;
 static struct Command **cmdlist;
 static int numCmds;
 char port[7] = "31337";
-static char* base[32];
+static char* base[MAX_DIR_LEN];
 int max_size = 16;
 
 
@@ -45,8 +46,13 @@ int check_args(int cmd_nb, int argc) {
     return 0;
 }
 
-int check_auth() {
-	return 0;
+int check_auth(struct User* user, int client_fd) {
+	if (user->isLoggedIn == true){
+		return 0;
+	} else {
+		write(client_fd, "You need to log in first", 25);
+		return 1;
+	}
 }
 
 // Helper function to run commands in unix.
@@ -193,6 +199,10 @@ void parse_grass() {
 //user name must be in conf file
 //send pipe login waiting
 const int do_login(const char** array) {
+	//array[0] = username
+	//array[1] = clientfd
+	//array[2] = index
+	//array[3] = dir
 	printf("login\n");
 	fflush(stdout);
 	if(array[0] == NULL || *array[0] == '\0') {
@@ -220,7 +230,7 @@ int do_pass(const char** array) {
 	//array[0] = pass
 	//array[1] = clientfd
 	//array[2] = index
-
+	//array[3] = dir
 	int client_fd = -1;
     client_fd = atoi(array[1]);
 	int index = -1;
@@ -244,61 +254,59 @@ int do_pass(const char** array) {
 			else{
 				userlist[index]->isLoggedIn = true;
 				write(client_fd, "Log in success", 15);
-				return 1;
+				return 0;
 			}
 		}
 	}
 	write(client_fd, "Incorrect credentials", 22);
-    return 0;
+    return 1;
 }
 
 int do_whoami(const char** array) {
+	//array[0] = clientfd
+	//array[1] = index
+	//array[2] = dir
 	int client_fd = -1;
     client_fd = atoi(array[0]);
 	int index = -1;
     index = atoi(array[1]);
-	//array[0] = clientfd
-	//array[1] = index
-    printf("whoami\n");
+    //check issue ?? XXX
     fflush(stdout);
-    UNUSED(array);
-    if(index >= 0 && userlist[index]->isLoggedIn) {
+    if (index >= 0 && !check_auth(userlist[index], client_fd)) {
     	write(client_fd, userlist[index]->uname, max_size);
-    	return 1;
+    	return 0;
     }
-    //check auth
-    //currently logged user
-    return 0;
+    return 1;
 }
 
 int do_logout(const char** array) {
 	//array[0] = clientfd
 	//array[1] = index
-	int client_fd = -1;
-    client_fd = atoi(array[0]);
-	int index = -1;
-    index = atoi(array[1]);
-    printf("logout\n");
+	//array[2] = dir
+    int client_fd = atoi(array[0]);
+    int index = atoi(array[1]);
     fflush(stdout);
-    UNUSED(array);
-    //check authentication
-    //logout
-    if(index >= 0 && userlist[index]->isLoggedIn) {
+    //free vstuf ?? XXX
+    if(index >= 0 && !check_auth(userlist[index], client_fd)) {
     	userlist[index]->isLoggedIn = false;
 		write(client_fd, "Loggout success", 16);
-    	return 1;
+    	return 0;
     }
-    return 0;
+    return 1;
 }
 
 int do_w(const char** array) {
 	//array[0] = clientfd
+	//array[1] = index
+	//array[2] = dir
 	int client_fd = -1;
     client_fd = atoi(array[0]);
-    printf("w\n");
+	int index = -1;
+    index = atoi(array[1]);
     fflush(stdout);
-    UNUSED(array);
-    //successful auth
+    if (check_auth(userlist[index], client_fd)) {
+    	return 1;
+    }
     //list of each logged in user on a single line space separated
     int size = 0;
     for(int i = 0; i < numUsers; i++) {
@@ -327,46 +335,86 @@ int do_w(const char** array) {
 }
 
 int do_ping(const char** array) {
-    printf("ping");
-    //does not need authentication
-    //returns unix output of ping $HOST -c 1
+	//array[0] = host name
+	//array[1] = clientfd
+	//array[2] = index
+	//array[3] = dir
+	int client_fd = -1;
+    client_fd = atoi(array[1]);
+
     if (strlen(array[0]) > MAX_PING_LEN) {
       return 1;
     }
     char str[80]; //EXPLOIT ?
     PING_SHELLCODE(str, array[0]);
-    puts(str);
+    write(client_fd, str, strlen(str));
     return 0;
 }
 
 
 int do_ls(const char** array) {
-    printf("ls");
-    UNUSED(array);
+	//array[0] = clientfd
+	//array[1] = index
+	//array[2] = dir
+	int client_fd = -1;
+    client_fd = atoi(array[0]);
+	int index = -1;
+    index = atoi(array[1]);
+    fflush(stdout);
+    if (check_auth(userlist[index], client_fd)) {
+    	return 1;
+    }
     system(LS_SHELLCODE);
-    //check authentication
-
     return 0;
 }
 
 int do_cd(const char** array) {
-    printf("cd");
-    //authentication
-    //changing current rep
-    //dir = array[0];
+	//array[0] = path
+	//array[1] = clientfd
+	//array[2] = index
+	//array[3] = dir
+	int client_fd = -1;
+    client_fd = atoi(array[1]);
+	int index = -1;
+    index = atoi(array[2]);
+    fflush(stdout);
+    if (check_auth(userlist[index], client_fd)) {
+    	return 1;
+    }
+	//change current dir
     return 0;
 }
 
 int do_mkdir(const char** array) {
-    printf("mkdir");
-    //authentication
+	//array[0] = dir to mks
+	//array[1] = clientfd
+	//array[2] = index
+	//array[3] = dir
+    int client_fd = -1;
+    client_fd = atoi(array[1]);
+	int index = -1;
+    index = atoi(array[2]);
+    fflush(stdout);
+    if (check_auth(userlist[index], client_fd)) {
+    	return 1;
+    }
     //check collision and permissions when create
     return 0;
 }
 
 int do_rm(const char** array) {
-    printf("rm");
-    //authentication
+	//array[0] = dir to rm
+	//array[1] = clientfd
+	//array[2] = index
+	//array[3] = dir
+    int client_fd = -1;
+    client_fd = atoi(array[1]);
+	int index = -1;
+    index = atoi(array[2]);
+    fflush(stdout);
+    if (check_auth(userlist[index], client_fd)) {
+    	return 1;
+    }
     //if exists, checks rights (recursive as works for dir too)
     //dir = array[0];
     return 0;
@@ -388,17 +436,25 @@ int do_grep(const char** array) {
 }
 
 int do_date(const char** array) {
-    printf("date");
-    UNUSED(array);
-    check_auth();
+	//array[0] = clientfd
+	//array[1] = index
+	//array[2] = dir
+	int client_fd = -1;
+	client_fd = atoi(array[0]);
+	int index = -1;
+	index = atoi(array[1]);
+    if (check_auth(userlist[index], client_fd)) {
+    	return 1;
+    }
     system(DATE_SHELLCODE);
     return 0;
 }
 
 int do_exit(const char** array) {
-    printf("exit");
-    UNUSED(array);
-    int err = 0;
+	//array[0] = clientfd
+	//array[1] = index
+	//array[2] = dir
+    int err = do_logout(array);
     if (!err) {
       exit(0);
     } else {
@@ -418,6 +474,9 @@ void client_handler(int client_fd) {
 	bool loggedIn = false;
 	//port used for file transfers
 	int port = -1;
+	//dir used to keep track of position
+	char dir[MAX_DIR_LEN];
+	strcpy(dir, base);
 
 	printf("I'm a new thread!Look at me!\n");
 	char *string_exit = "exit\n";
@@ -446,26 +505,15 @@ void client_handler(int client_fd) {
             	        for (size_t j = 1; j < MAX_PARAM + 1; ++j) {
                             args[j - 1] = cmdAndArgs[j];
                         }
-                        int i = 0;
-                        while(need_fd[i]) {
-                            if(strcmp(need_fd[i], shell_cmds[cmd_nb].cname) == 0) {
-    							char  buff[10];
-    							snprintf(buff, sizeof(buff), "%d", client_fd);
-                            	args[feedbackTok-1] = buff;
-                                break;
-                            }
-                            i++;
-                        }
-                        i = 0;
-                        while(need_id[i]) {
-                            if(strcmp(need_id[i], shell_cmds[cmd_nb].cname) == 0) {
-                            	char  buff[10];
-    							snprintf(buff, sizeof(buff), "%d", username_index);
-                            	args[feedbackTok] = buff;
-                                break;
-                            }
-                            i++;
-                        }
+                        //add clienfd in the args
+                        char  buff[10];
+    					snprintf(buff, sizeof(buff), "%d", client_fd);
+                        args[feedbackTok-1] = buff;
+                        //add username id
+                        char  buff2[10];
+    					snprintf(buff2, sizeof(buff2), "%d", username_index);
+                        args[feedbackTok] = buff2;
+                         
 						feedback = (shell_cmds[cmd_nb].fct)(args);
                         if (feedback) { // Can be FS error or SHELL error.
                             if (feedback < 0) {
