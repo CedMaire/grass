@@ -20,7 +20,7 @@
 #include <errno.h>
 
 #define NB_CMD (15)
-#define MAX_INPUT_LENGTH (2048)
+#define MAX_INPUT_LENGTH (4096)
 #define MAX_PARAM (2)
 #define SHELL_PROMPT ">>> "
 #define STRING_END '\0'
@@ -83,7 +83,7 @@ int do_logout(const char** array);
 
 #define DATE_SHELLCODE "\
 #/bin/bash \n\
-date \n\
+date 2>&1\n\
 "
 
 //MAX_PATH=4096 chars
@@ -95,29 +95,30 @@ date \n\
 #define MAX_HOST_LEN (50) //80 - 22 - 1
 #define PING_SHELLCODE(str, host) sprintf(str, "\
 #/bin/bash \n\
-ping -c 1 %s", host)
+ping -c 1 %s 2>&1\n\
+", host)
 
 #define LS_SHELLCODE(str, dir, base) sprintf(str, "\
 #/bin/bash \n\
 cd %s \n\
-ls \n\
+ls 2>&1\n\
 cd %s", dir, base)
 
 
 #define MAX_NAME_LEN 128
 #define MKDIR_SHELLCODE(str, dir) sprintf(str, "\
 #/bin/bash \n\
-mkdir %s \n\
+mkdir %s 2>&1\n\
 ", dir)
 
 #define RMDIR_SHELLCODE(str, dir) sprintf(str, "\
 #/bin/bash \n\
-rm -r %s \n\
+rm -r %s 2>&1\n\
 ", dir)
 
 #define RMFILE_SHELLCODE(str, dir) sprintf(str, "\
 #/bin/bash \n\
-rm %s \n\
+rm %s 2>&1\n\
 ", dir)
 
 
