@@ -4,6 +4,7 @@ static struct User **userlist;
 static int numUsers;
 static struct Command **cmdlist;
 static int numCmds;
+static char * addr_ip = "127.0.0.1";
 char port[7] = "31337";
 static char base[MAX_BASE_LEN];
 
@@ -276,10 +277,12 @@ int do_login(const char** array) {
 			if (strncmp(userlist[i]->uname, array[0], strlen(userlist[i]->uname)) == 0) {
 				printf("Known User\n");
 				fflush(stdout);
+                write(atoi(array[1]), "\n", 1);
 				return i;
 			}
 		}
 	}
+    write(atoi(array[1]), "\n", 1);
 	return -2;
 }
 
@@ -413,13 +416,13 @@ int do_ping(const char** array) {
     client_fd = atoi(array[1]); 
 
     if (strlen(array[0]) > MAX_HOST_LEN) {
-    	write(client_fd, "Host name too long, must be < 50", 32);
-      return 1;
+        write(client_fd, "Host name too long, must be < 50", 32);
+        return 1;
     }
     char str[80];
     PING_SHELLCODE(str, array[0]);
     system(str);
-    //write(client_fd, str, strlen(str));
+    write(atoi(array[1]), "ping feedback", 13);
     return 0;
 }
 
@@ -618,7 +621,7 @@ void client_handler(int client_fd) {
 	printf("I'm a new thread!Look at me!\n");
 	char *string_exit = "exit\n";
 	while(true) {
-		char input[MAX_CREDENTIAL_LEN];
+		char input[MAX_INPUT_LENGTH];
 		bzero(input, sizeof(input));
 		read(client_fd, input, sizeof(input));
 		printf("From client: %s\n", input);
@@ -705,7 +708,7 @@ int main() {
 	parse_grass();
 
 	//Main socket
-	int socket_fd = create_socket(server);
+	int socket_fd = create_socket(server, addr_ip, atoi(port));
 	if (socket_fd < 0) {
 		fprintf(stderr, "Exit program because of error.\n");
         exit(EXIT_FAILURE);

@@ -1,5 +1,10 @@
 #include <grass.h>
 
+void do_nothing() {
+    fprintf(stderr, "\nPlease quit by typing: exit\n");
+    fprintf(stderr, ">>> ");
+}
+
 /*
  * Send a file to the server as its own thread
  *
@@ -38,61 +43,117 @@ void search(char *pattern) {
     // TODO
 }
 
-int main(int argc, char **argv) {
-    UNUSED(argc);
-    UNUSED(argv);
-    // TODO:
-    // Make a short REPL to send commands to the server
-    // Make sure to also handle the special cases of a get and put command
+void repl_handler(int socket_fd) {
+    char input[MAX_INPUT_LENGTH + 1];
+    memset(input, 0, MAX_INPUT_LENGTH + 1);
 
-    int socket_fd = create_socket(client);
+    char server_feedback[MAX_INPUT_LENGTH];
+    bzero(server_feedback, sizeof(server_feedback));
 
-    //close(socket_fd);
+    while (!feof(stdin) && !ferror(stdin) && strncmp(input, "exit", 4) != 0) {
+        memset(input, 0, MAX_INPUT_LENGTH + 1);
+        bzero(server_feedback, sizeof(server_feedback));
 
-    // Simple REPL.
-    while (!feof(stdin) && !ferror(stdin)) {
         printf(SHELL_PROMPT);
         fflush(stdout);
-
-        char input[MAX_INPUT_LENGTH + 1];
-        memset(input, 0, MAX_INPUT_LENGTH + 1);
 
         if (fgets(input, MAX_INPUT_LENGTH + 1, stdin) == NULL || strlen(input) < 2) {
             fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_INVALID_CMD]);
         } else {
-            //printf("Got input: %s", input);
-            //printf("Got length: %lu", strlen(input));
-            // We replace the last "\n" with the EOL character.
-            char* ending = strrchr(input, ENTER);
-            if (ending != NULL) {
-                *ending = STRING_END;
-            } else {
-                // We clear the input buffer of stdin. (In the case the input was longer than MAX_INPUT_LENGTH).
-                // TODO: check if acctually have EOL char.
-                int useless = getchar();
-                while (useless != ENTER && useless != EOF) {
-                    useless = getchar();
-                }
-            }
-
-            // We replace the last "/" from a path string if needed.
-            ending = strrchr(input, PATH_TOKEN);
-            if (ending != NULL && *(ending + 1) == STRING_END && *(ending - 1) != SPACE_CHAR) {
-                *ending = STRING_END;
-            }
-            ending = NULL;
-
-            // We split the input into the command and the provided arguments.
-            char* cmdAndArgs[MAX_INPUT_LENGTH];
-            memset(cmdAndArgs, 0, MAX_INPUT_LENGTH);
-
-            int feedbackTok = tokenize_input(input, cmdAndArgs);
-            if (feedbackTok < 0) {
-                fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_ARGS]);
-            }
             write(socket_fd, input, strlen(input) + 1);
-            //read output
+
+            read(socket_fd, server_feedback, sizeof(server_feedback));
+            if (strlen(server_feedback) > 1) {
+                printf("%s\n", server_feedback);
+            }
         }
+    }
+
+    if (strncmp(input, "exit", 4) != 0) {
+        char *string_exit = "exit\n";
+        write(socket_fd, string_exit, strlen(string_exit) + 1);
+        close(socket_fd);
+    }
+}
+
+void auto_cmds_handler(int socket_fd, char * file_in, char * file_out) {
+    char server_feedback[MAX_INPUT_LENGTH];
+    bzero(server_feedback, sizeof(server_feedback));
+
+    FILE * fp_in;
+    char * current_line = NULL;
+    size_t line_length = 0;
+    size_t bytes_read;
+
+    fp_in = fopen(file_in, "r");
+    if (fp_in == NULL) {
+        fprintf(stderr, "Error: input file must exist");
+        char *string_exit = "exit\n";
+        write(socket_fd, string_exit, strlen(string_exit) + 1);
+        close(socket_fd);
+        exit(EXIT_FAILURE);
+    }
+
+    FILE * fp_out;
+    fp_out = fopen(file_out, "w+");
+    if (fp_out == NULL) {
+        fprintf(stderr, "Error: while opening output file");
+        char *string_exit = "exit\n";
+        write(socket_fd, string_exit, strlen(string_exit) + 1);
+        close(socket_fd);
+        fclose(fp_in);
+
+        exit(EXIT_FAILURE);
+    }
+
+    while ((bytes_read = getline(&current_line, &line_length, fp_in)) != -1) {
+        bzero(server_feedback, sizeof(server_feedback));
+        if (line_length <= MAX_INPUT_LENGTH) {
+            write(socket_fd, current_line, strlen(current_line) + 1);
+
+            read(socket_fd, server_feedback, sizeof(server_feedback));
+            if (strlen(server_feedback) > 1) {
+                fprintf(fp_out, "%s\n", server_feedback);
+            }
+        } else {
+            fprintf(stderr, "Error: input line too long");
+        }
+    }
+
+    if (strncmp(current_line, "exit", 4) != 0) {
+        char *string_exit = "exit\n";
+        write(socket_fd, string_exit, strlen(string_exit) + 1);
+        close(socket_fd);
+    }
+
+    fclose(fp_in);
+    fclose(fp_out);
+    if (current_line) {
+        free(current_line);
+    }
+}
+
+int main(int argc, char **argv) {
+    UNUSED(argc);
+    UNUSED(argv);
+
+    signal(SIGINT, do_nothing);
+
+    if (argc != 3 && argc != 5) {
+        fprintf(stderr, "Incorrect number of arguments.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    int socket_fd = create_socket(client, argv[1], atoi(argv[2]));
+    if (socket_fd < 0) {
+        fprintf(stderr, "Error: Socket error.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (argc == 3) {
+        repl_handler(socket_fd);
+    } else {
+        auto_cmds_handler(socket_fd, argv[3], argv[4]);
     }
 
     exit(EXIT_SUCCESS);

@@ -3,6 +3,9 @@ bin/
 CMakeLists.txt
 cmake-build-debug/
 
+input.txt
+output.txt
+
 # Prerequisites
 *.d
 
