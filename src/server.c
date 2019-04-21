@@ -174,12 +174,10 @@ void search(char *pattern) {
 }
 
 // Parse the grass.conf file and fill in the global variables
-int parse_grass() {
+void parse_grass() {
 	FILE* conf;
 	if ((conf = fopen("grass.conf", "r")) == NULL) {
 		fprintf(stderr, "grass.conf not found\n");
-		fflush(stdout);
-		return 0;
 	} else {
 		printf("File loaded\n");
 	}
@@ -196,8 +194,6 @@ int parse_grass() {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "base not found\n");
-				fflush(stdout);
-				return 0;
 			}
  			getcwd(base, MAX_BASE_LEN - 2) ;
 			strncat(base, token, 32);
@@ -211,8 +207,6 @@ int parse_grass() {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "port not found\n");
-				fflush(stdout);
-				return 0;
 			}
 			strncpy(port, token, 7);
 			printf("port: %s\n", token);
@@ -227,14 +221,10 @@ int parse_grass() {
 	//Set the offset just before the users
 	if (fseek(conf, offset_of_users - 32, SEEK_SET) != 0) {
 		fprintf(stderr, "error when counting the users\n");
-		fflush(stdout);
-		return 0;
 	}
 
 	if ((userlist = calloc(nbr_users, sizeof(struct User*))) == NULL) {
 		fprintf(stderr, "allocation error\n");
-		fflush(stdout);
-		return 0;
 	}
 
 	//Fill the userlist
@@ -247,22 +237,16 @@ int parse_grass() {
 			struct User *u;
 			if ((u = calloc(1, sizeof(struct User))) == NULL) {
 				fprintf(stderr, "allocation error\n");
-				fflush(stdout);
-				return 0;
 			}
 
 			//Fill the username
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "user not found, wrong format\n");
-				fflush(stdout);
-				return 0;
 			}
 			char* username;
 			if ((username = calloc(MAX_CREDENTIAL_LEN, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
-				fflush(stdout);
-				return 0;
 			}
 			strncpy(username, token, MAX_CREDENTIAL_LEN);
 			printf("user: %s ", token);
@@ -271,14 +255,10 @@ int parse_grass() {
 			token = strtok(NULL, " ");
 			if (token == NULL) {
 				fprintf(stderr, "password not found, wrong format\n");
-				fflush(stdout);
-				return 0;
 			}
 			char* password;
 			if ((password = calloc(MAX_CREDENTIAL_LEN, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
-				fflush(stdout);
-				return 0;
 			}
 			strncpy(password, token, strlen(token)-2);
 			printf("pwd: %s\n", password);
@@ -294,11 +274,8 @@ int parse_grass() {
 	numUsers = userID;
 
 	printf("End of conf file reached\n");
-	fflush(stdout);
 
 	fclose(conf);
-
-	return 1;
 }
 
 //#######################CMDS###############################################

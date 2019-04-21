@@ -20,7 +20,7 @@
 #include <errno.h>
 
 #define NB_CMD (15)
-#define MAX_INPUT_LENGTH (4096)
+#define MAX_INPUT_LENGTH (1000)
 #define MAX_PARAM (2)
 #define SHELL_PROMPT ">>> "
 #define STRING_END '\0'

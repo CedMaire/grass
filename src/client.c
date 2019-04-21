@@ -54,9 +54,6 @@ void repl_handler(int socket_fd) {
         memset(input, 0, MAX_INPUT_LENGTH + 1);
         bzero(server_feedback, sizeof(server_feedback));
         
-    /*
-    // Simple REPL.
-    while (!feof(stdin) && !ferror(stdin)) {
         printf(SHELL_PROMPT);
         fflush(stdout);
 
@@ -121,7 +118,7 @@ void auto_cmds_handler(int socket_fd, char * file_in, char * file_out) {
         } else {
             fprintf(stderr, "Error: input line too long");
         }
-    }*/
+    }
 
     if (strncmp(current_line, "exit", 4) != 0) {
         char *string_exit = "exit\n";
