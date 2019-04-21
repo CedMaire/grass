@@ -282,7 +282,9 @@ int do_login(const char** array) {
 			}
 		}
 	}
-    write(atoi(array[1]), "\n", 1);
+	char * err_string = "Error: Unknown User...";
+    fprintf(stderr, "%s", err_string);
+    write(atoi(array[1]), err_string, strlen(err_string) + 1);
 	return -2;
 }
 
