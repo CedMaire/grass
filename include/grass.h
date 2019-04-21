@@ -29,38 +29,6 @@
 #define SPACE " "
 #define PATH_TOKEN '/'
 
-#define DATE_SHELLCODE "\
-#/bin/bash \n\
-date \n\
-"
-
-#define MAX_PING_LEN (57) //80 - 22 - 1
-#define PING_SHELLCODE(str, host) sprintf(str, "\
-#/bin/bash \n\
-ping \n\
-%s -c 1", host)
-
-#define LS_SHELLCODE(str, dir, base) sprintf(str, "\
-#/bin/bash \n\
-cd %s \n\
-ls \n\
-cd %s", dir, base)
-
-#define MKDIR_SHELLCODE(str, dir) sprintf(str, "\
-#/bin/bash \n\
-mkdir %s \n\
-", dir)
-
-#define RMDIR_SHELLCODE(str, dir) sprintf(str, "\
-#/bin/bash \n\
-rm -r %s \n\
-", dir)
-
-#define RMFILE_SHELLCODE(str, dir) sprintf(str, "\
-#/bin/bash \n\
-rm %s \n\
-", dir)
-
 #define UNUSED(x) (void)(x)
 
 #ifdef DEBUG
@@ -111,7 +79,48 @@ int do_w(const char** array);
 int do_whoami(const char** array);
 int do_logout(const char** array);
 
-#define MAX_DIR_LEN 255
+#define MAX_CREDENTIAL_LEN 20
+
+#define DATE_SHELLCODE "\
+#/bin/bash \n\
+date \n\
+"
+
+//MAX_PATH=4096 chars
+#define MAX_BASE_LEN 500
+
+//len base + len client folder
+#define MAX_DIR_LEN 628 //500 + 128
+
+#define MAX_HOST_LEN (50) //80 - 22 - 1
+#define PING_SHELLCODE(str, host) sprintf(str, "\
+#/bin/bash \n\
+ping \n\
+%s -c 1", host)
+
+#define LS_SHELLCODE(str, dir, base) sprintf(str, "\
+#/bin/bash \n\
+cd %s \n\
+ls \n\
+cd %s", dir, base)
+
+
+#define MAX_NAME_LEN 128
+#define MKDIR_SHELLCODE(str, dir) sprintf(str, "\
+#/bin/bash \n\
+mkdir %s \n\
+", dir)
+
+#define RMDIR_SHELLCODE(str, dir) sprintf(str, "\
+#/bin/bash \n\
+rm -r %s \n\
+", dir)
+
+#define RMFILE_SHELLCODE(str, dir) sprintf(str, "\
+#/bin/bash \n\
+rm %s \n\
+", dir)
+
 
 // STRUCTURES, ENUMERATIONS
 enum error_codes {

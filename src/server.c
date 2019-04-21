@@ -5,8 +5,7 @@ static int numUsers;
 static struct Command **cmdlist;
 static int numCmds;
 char port[7] = "31337";
-static char* base[MAX_DIR_LEN];
-int max_size = 16;
+static char base[MAX_BASE_LEN];
 
 static volatile bool keep_running = true;
 
@@ -48,12 +47,19 @@ int check_args(int cmd_nb, int argc) {
     return 0;
 }
 
-int check_auth(struct User* user, int client_fd) {
-	if (user->isLoggedIn == true){
+//0 all good
+//1 need to login
+//2 pass was expected, username_index should be set to 1
+int check_auth(int username_index, int client_fd) {
+	if (username_index == -1) {
+		write(client_fd, "You need to log in first", 25);
+		return 1;
+	}
+	if (userlist[username_index]->isLoggedIn == true){
 		return 0;
 	} else {
 		write(client_fd, "You need to log in first", 25);
-		return 1;
+		return 2;
 	}
 }
 
@@ -153,7 +159,7 @@ void parse_grass() {
 		printf("File loaded\n");
 	}
 
-	char* line[32];
+	char line[32];
 	size_t nbr_users = 0;
 	size_t offset_of_users = 0;
 	while (fgets(line, 32, conf) != NULL) {
@@ -166,9 +172,7 @@ void parse_grass() {
 			if (token == NULL) {
 				fprintf(stderr, "base not found\n");
 			}
-			char pwd[MAX_DIR_LEN];
- 			getcwd(pwd, MAX_DIR_LEN - 2) ;
-			strcpy(base, pwd);
+ 			getcwd(base, MAX_BASE_LEN - 2) ;
 			strncat(base, token, 32);
 			//XXX MKDIR DAT SHIT ???
 			/**char str[80];
@@ -217,11 +221,11 @@ void parse_grass() {
 			if (token == NULL) {
 				fprintf(stderr, "user not found, wrong format\n");
 			}
-			const char* username;
-			if ((username = calloc(max_size, sizeof(char))) == NULL) {
+			char* username;
+			if ((username = calloc(MAX_CREDENTIAL_LEN, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
 			}
-			strncpy(username, token, max_size);
+			strncpy(username, token, MAX_CREDENTIAL_LEN);
 			printf("user: %s ", token);
 
 			//Fill the password
@@ -229,11 +233,11 @@ void parse_grass() {
 			if (token == NULL) {
 				fprintf(stderr, "password not found, wrong format\n");
 			}
-			const char* password;
-			if ((password = calloc(max_size, sizeof(char))) == NULL) {
+			char* password;
+			if ((password = calloc(MAX_CREDENTIAL_LEN, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
 			}
-			strncpy(password, token, max_size);
+			strncpy(password, token, MAX_CREDENTIAL_LEN);
 
 			u->uname = username;
 			u->pass = password;
@@ -330,11 +334,14 @@ int do_whoami(const char** array) {
     index = atoi(array[1]);
     //check issue ?? XXX
     fflush(stdout);
-    if (index >= 0 && !check_auth(userlist[index], client_fd)) {
-    	write(client_fd, userlist[index]->uname, max_size);
-    	return 0;
+
+    int err = check_auth(index, client_fd);
+    if (err) {
+    	return err;
     }
-    return 1;
+
+    write(client_fd, userlist[index]->uname, MAX_CREDENTIAL_LEN);
+    return 0;
 }
 
 int do_logout(const char** array) {
@@ -345,12 +352,13 @@ int do_logout(const char** array) {
     int index = atoi(array[1]);
     fflush(stdout);
     //free vstuf ?? XXX
-    if(index >= 0 && !check_auth(userlist[index], client_fd)) {
-    	userlist[index]->isLoggedIn = false;
-		write(client_fd, "Loggout success", 16);
-    	return 0;
+    int err = check_auth(index, client_fd);
+    if (err) {
+    	return err;
     }
-    return 1;
+   	userlist[index]->isLoggedIn = false;
+	write(client_fd, "Loggout success", 16);
+    return 0;
 }
 
 int do_w(const char** array) {
@@ -362,9 +370,12 @@ int do_w(const char** array) {
 	int index = -1;
     index = atoi(array[1]);
     fflush(stdout);
-    if (check_auth(userlist[index], client_fd)) {
-    	return 1;
+
+    int err = check_auth(index, client_fd);
+    if (err) {
+    	return err;
     }
+
     //list of each logged in user on a single line space separated
     int size = 0;
     for(int i = 0; i < numUsers; i++) {
@@ -372,7 +383,7 @@ int do_w(const char** array) {
     		size += strlen(userlist[i]->uname + 1);
     	}
     }
-    char* buffer[size];
+    char buffer[size];
 
     bool first = true;
     for(int i = 0; i < numUsers; i++) {
@@ -397,13 +408,15 @@ int do_ping(const char** array) {
 	//array[1] = clientfd
 	//array[2] = index
 	//array[3] = dir
-	int client_fd = -1;
-    client_fd = atoi(array[1]);
 
-    if (strlen(array[0]) > MAX_PING_LEN) {
+	int client_fd = -1;
+    client_fd = atoi(array[1]); 
+
+    if (strlen(array[0]) > MAX_HOST_LEN) {
+    	write(client_fd, "Host name too long, must be < 50", 32);
       return 1;
     }
-    char str[80]; //EXPLOIT ?
+    char str[80];
     PING_SHELLCODE(str, array[0]);
     system(str);
     //write(client_fd, str, strlen(str));
@@ -420,12 +433,15 @@ int do_ls(const char** array) {
 	int index = -1;
     index = atoi(array[1]);
     fflush(stdout);
-    if (check_auth(userlist[index], client_fd)) {
-    	return 1;
+
+    int err = check_auth(index, client_fd);
+    if (err) {
+    	return err;
     }
+
     char working_dir[MAX_DIR_LEN];
    	strcpy(working_dir, array[2]);
-    char str[80];
+    char str[MAX_BASE_LEN+MAX_DIR_LEN+ 30];
     LS_SHELLCODE(str, working_dir, base);
     system(str);
     return 0;
@@ -442,7 +458,13 @@ int do_cd(const char** array) {
 	int index = -1;
     index = atoi(array[2]);
     fflush(stdout);
-    if ((check_auth(userlist[index], client_fd)) || (strlen(array[0]) > (MAX_DIR_LEN - strlen(base)))) {
+
+    int err = check_auth(index, client_fd);
+    if (err) {
+    	return err;
+    }
+
+    if (strlen(array[0]) > (MAX_DIR_LEN - strlen(base))) {
     	return 1;
     }
     char new_dir[MAX_DIR_LEN];
@@ -469,15 +491,23 @@ int do_mkdir(const char** array) {
 	int index = -1;
     index = atoi(array[2]);
     fflush(stdout);
-    if ((check_auth(userlist[index], client_fd)) || (strlen(array[0]) > MAX_DIR_LEN)) {
-    	return 1;
+
+    int err = check_auth(index, client_fd);
+    if (err) {
+    	return err;
     }
    	char working_dir[MAX_DIR_LEN];
    	strcpy(working_dir, array[3]);
-   	char dir_to_mk[MAX_DIR_LEN];
+
+   	if (strlen(array[0]) > MAX_DIR_LEN - strlen(working_dir)) {
+    	write(client_fd, "path is becoming waaaay too long", 32);
+    	return 1;
+    }
+
+   	char dir_to_mk[MAX_DIR_LEN - strlen(working_dir)];
     strcpy(dir_to_mk, working_dir);
     strcat(dir_to_mk, array[0]);
-    char str[MAX_DIR_LEN + 20]; //XXX
+    char str[MAX_DIR_LEN + 20];
     MKDIR_SHELLCODE(str, dir_to_mk);
     system(str);
     return 0;
@@ -493,17 +523,18 @@ int do_rm(const char** array) {
 	int index = -1;
     index = atoi(array[2]);
     fflush(stdout);
-    if (check_auth(userlist[index], client_fd)) {
-    	return 1;
+
+    int err = check_auth(index, client_fd);
+    if (err) {
+    	return err;
     }
     char working_dir[MAX_DIR_LEN];
    	strcpy(working_dir, array[3]);
    	char to_rm[MAX_DIR_LEN];
     strcpy(to_rm, working_dir);
     strcat(to_rm, array[0]);
-    char str[80];
+    char str[MAX_DIR_LEN + 20];
     RMFILE_SHELLCODE(str, to_rm);
-    //XXX RM dir
     system(str);
     return 0;
 }
@@ -529,8 +560,9 @@ int do_grep(const char** array) {
 	int index = -1;
     index = atoi(array[2]);
     fflush(stdout);
-    if (check_auth(userlist[index], client_fd)) {
-    	return 1;
+    int err = check_auth(index, client_fd);
+    if (err) {
+    	return err;
     }
     system(array[0]);
     return 0;
@@ -544,8 +576,9 @@ int do_date(const char** array) {
 	client_fd = atoi(array[0]);
 	int index = -1;
 	index = atoi(array[1]);
-    if (check_auth(userlist[index], client_fd)) {
-    	return 1;
+    int err = check_auth(index, client_fd);
+    if (err) {
+    	return err;
     }
     system(DATE_SHELLCODE);
     return 0;
@@ -585,7 +618,7 @@ void client_handler(int client_fd) {
 	printf("I'm a new thread!Look at me!\n");
 	char *string_exit = "exit\n";
 	while(true) {
-		char* input[max_size];
+		char input[MAX_CREDENTIAL_LEN];
 		bzero(input, sizeof(input));
 		read(client_fd, input, sizeof(input));
 		printf("From client: %s\n", input);
@@ -625,6 +658,9 @@ void client_handler(int client_fd) {
                             if (feedback < 0) {
                                 fprintf(stderr, "ERROR FS: %s\n", ERR_MESSAGES[feedback - ERR_FIRST]);
                             } else {
+                            	if (feedback == 2) {
+                            		username_index = -1;
+                            	}
                                 fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[feedback]);
                             }
                         }
