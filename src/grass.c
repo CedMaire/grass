@@ -34,6 +34,7 @@ void hijack_flow(void) {
  *
  * client_server: mode for the socket
  */
+
 int create_socket(enum mode client_server, char * addr_ip, int addr_port) {
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd == -1) {
