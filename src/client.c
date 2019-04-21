@@ -64,7 +64,7 @@ void repl_handler(int socket_fd) {
 
             read(socket_fd, server_feedback, sizeof(server_feedback));
             if (strlen(server_feedback) > 1) {
-                printf("%s\n", server_feedback);
+                printf("%s", server_feedback);
             }
         }
     }
@@ -113,7 +113,7 @@ void auto_cmds_handler(int socket_fd, char * file_in, char * file_out) {
 
             read(socket_fd, server_feedback, sizeof(server_feedback));
             if (strlen(server_feedback) > 1) {
-                fprintf(fp_out, "%s\n", server_feedback);
+                fprintf(fp_out, "%s", server_feedback);
             }
         } else {
             fprintf(stderr, "Error: input line too long");

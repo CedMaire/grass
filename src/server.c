@@ -53,13 +53,13 @@ int check_args(int cmd_nb, int argc) {
 //2 pass was expected, username_index should be set to 1
 int check_auth(int username_index, int client_fd) {
 	if (username_index == -1) {
-		write(client_fd, "You need to log in first", 25);
+		write(client_fd, "You need to log in first\n", 26);
 		return 1;
 	}
 	if (userlist[username_index]->isLoggedIn == true){
 		return 0;
 	} else {
-		write(client_fd, "You need to log in first", 25);
+		write(client_fd, "You need to log in first\n", 26);
 		return 2;
 	}
 }
@@ -114,7 +114,32 @@ int exec_function(int feedbackTok, char** cmd_and_args) {
 }
 
 // Helper function to run commands in unix.
-void run_command(const char* command, int sock) {
+int run_command(const char* command, int client_fd) {
+    FILE * fp_output;
+    char cmd_output[MAX_INPUT_LENGTH];
+    memset(cmd_output, 0, sizeof(cmd_output));
+    char cmd_output_line[MAX_INPUT_LENGTH];
+    memset(cmd_output_line, 0, sizeof(cmd_output_line));
+
+    printf("%s", command);
+    fflush(stdout);
+
+    fp_output = popen(command, "r");
+    if (fp_output == NULL) {
+        char * err_str = "Error: Failed to run command\n";
+        write(client_fd, err_str, strlen(err_str) + 1);
+        return -1;
+    }
+
+    while (fgets(cmd_output_line, sizeof(cmd_output_line), fp_output) != NULL) {
+        strncat(cmd_output, cmd_output_line, strlen(cmd_output_line));
+        memset(cmd_output_line, 0, sizeof(cmd_output_line));
+    }
+    write(client_fd, cmd_output, strlen(cmd_output) + 1);
+
+    pclose(fp_output);
+
+    return 0;
 }
 
 /*
@@ -282,7 +307,7 @@ int do_login(const char** array) {
 			}
 		}
 	}
-	char * err_string = "Error: Unknown User...";
+	char * err_string = "Error: Unknown User...\n";
     fprintf(stderr, "%s", err_string);
     write(atoi(array[1]), err_string, strlen(err_string) + 1);
 	return -1;
@@ -315,17 +340,17 @@ int do_pass(const char** array) {
 			printf("Matching user and pass\n");
 			fflush(stdout);
 			if(userlist[index]->isLoggedIn) {
-				write(client_fd, "You are already logged in on another client", 44);
+				write(client_fd, "You are already logged in on another client\n", 45);
 				return -1;
 			}
 			else{
 				userlist[index]->isLoggedIn = true;
-				write(client_fd, "Log in success", 15);
+				write(client_fd, "Log in success\n", 16);
 				return 0;
 			}
 		}
 	}
-	write(client_fd, "Incorrect credentials", 22);
+	write(client_fd, "Incorrect credentials\n", 23);
     return 1;
 }
 
@@ -345,6 +370,7 @@ int do_whoami(const char** array) {
     	return err;
     }
 
+    // TODO: send only length of uname + add \n for display at client
     write(client_fd, userlist[index]->uname, MAX_CREDENTIAL_LEN);
     return 0;
 }
@@ -362,7 +388,7 @@ int do_logout(const char** array) {
     	return err;
     }
    	userlist[index]->isLoggedIn = false;
-	write(client_fd, "Loggout success", 16);
+	write(client_fd, "Loggout success\n", 17);
     return 0;
 }
 
@@ -404,7 +430,8 @@ int do_w(const char** array) {
     }
     printf("%s", buffer);
     fflush(stdout);
-    write(client_fd, buffer, size);
+    // TODO: add \n at end of buffer and don't forget to re-add \0
+    write(client_fd, buffer, size + 1);
     return 0;
 }
 
@@ -418,13 +445,18 @@ int do_ping(const char** array) {
     client_fd = atoi(array[1]); 
 
     if (strlen(array[0]) > MAX_HOST_LEN) {
-        write(client_fd, "Host name too long, must be < 50", 32);
+        write(client_fd, "Host name too long, must be < 50\n", 33);
         return 1;
     }
     char str[80];
     PING_SHELLCODE(str, array[0]);
-    system(str);
-    write(atoi(array[1]), "ping feedback", 13);
+
+    int err_feedback = run_command(str, atoi(array[1]));
+    if (err_feedback < 0) {
+        fprintf(stderr, "Error: run_command failed");
+        return err_feedback;
+    }
+
     return 0;
 }
 
@@ -448,7 +480,13 @@ int do_ls(const char** array) {
    	strcpy(working_dir, array[2]);
     char str[MAX_BASE_LEN+MAX_DIR_LEN+ 30];
     LS_SHELLCODE(str, working_dir, base);
-    system(str);
+
+    int err_feedback = run_command(str, client_fd);
+    if (err_feedback < 0) {
+        fprintf(stderr, "Error: run_command failed");
+        return err_feedback;
+    }
+
     return 0;
 }
 
@@ -505,7 +543,7 @@ int do_mkdir(const char** array) {
    	strcpy(working_dir, array[3]);
 
    	if (strlen(array[0]) > MAX_DIR_LEN - strlen(working_dir)) {
-    	write(client_fd, "path is becoming waaaay too long", 32);
+    	write(client_fd, "path is becoming waaaay too long\n", 33);
     	return 1;
     }
 
@@ -514,7 +552,13 @@ int do_mkdir(const char** array) {
     strcat(dir_to_mk, array[0]);
     char str[MAX_DIR_LEN + 20];
     MKDIR_SHELLCODE(str, dir_to_mk);
-    system(str);
+
+    int err_feedback = run_command(str, client_fd);
+    if (err_feedback < 0) {
+        fprintf(stderr, "Error: run_command failed");
+        return err_feedback;
+    }
+
     return 0;
 }
 
@@ -540,7 +584,13 @@ int do_rm(const char** array) {
     strcat(to_rm, array[0]);
     char str[MAX_DIR_LEN + 20];
     RMFILE_SHELLCODE(str, to_rm);
-    system(str);
+
+    int err_feedback = run_command(str, client_fd);
+    if (err_feedback < 0) {
+        fprintf(stderr, "Error: run_command failed");
+        return err_feedback;
+    }
+
     return 0;
 }
 
@@ -569,7 +619,13 @@ int do_grep(const char** array) {
     if (err) {
     	return err;
     }
-    system(array[0]);
+
+    int err_feedback = run_command(array[0], client_fd);
+    if (err_feedback < 0) {
+        fprintf(stderr, "Error: run_command failed");
+        return err_feedback;
+    }
+
     return 0;
 }
 
@@ -585,7 +641,13 @@ int do_date(const char** array) {
     if (err) {
     	return err;
     }
-    system(DATE_SHELLCODE);
+
+    int err_feedback = run_command(DATE_SHELLCODE, client_fd);
+    if (err_feedback < 0) {
+        fprintf(stderr, "Error: run_command failed");
+        return err_feedback;
+    }
+
     return 0;
 }
 
@@ -620,13 +682,23 @@ void client_handler(int client_fd) {
 	char dir[MAX_DIR_LEN];
 	strcpy(dir, base);
 
-	printf("I'm a new thread!Look at me!\n");
+	printf("I'm Fred! Look at me!\n");
 	char *string_exit = "exit\n";
 	while(true) {
 		char input[MAX_INPUT_LENGTH];
 		bzero(input, sizeof(input));
 		read(client_fd, input, sizeof(input));
-		printf("From client: %s\n", input);
+		printf("From client: %s", input);
+
+        char* ending = strrchr(input, ENTER);
+        if (ending != NULL) {
+            *ending = STRING_END;
+        }
+        ending = strrchr(input, PATH_TOKEN);
+        if (ending != NULL && *(ending + 1) == STRING_END && *(ending - 1) != SPACE_CHAR) {
+            *ending = STRING_END;
+        }
+
 		char* cmdAndArgs[MAX_INPUT_LENGTH];
         memset(cmdAndArgs, 0, MAX_INPUT_LENGTH);
 		int feedbackTok = tokenize_input(input, cmdAndArgs);
@@ -641,6 +713,8 @@ void client_handler(int client_fd) {
      	            int feedback = check_args(cmd_nb, feedbackTok - 1);
         	        if (feedback) {
             	        fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[feedback]);
+                        char * err_str = "Error: wrong number of arguments\n";
+                        write(client_fd, err_str, strlen(err_str));
                 	} else {
                 	    const char* args[MAX_INPUT_LENGTH + 1];
      	                memset(args, 0, MAX_INPUT_LENGTH + 1);
@@ -679,6 +753,8 @@ void client_handler(int client_fd) {
             }
             if (cmd_nb < 0) {
                 fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_INVALID_CMD]);
+                char * err_str = "Error: invalid command\n";
+                write(client_fd, err_str, strlen(err_str));
             }
         }
 		fflush(stdout);
