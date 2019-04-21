@@ -238,12 +238,12 @@ void parse_grass() {
 			if ((password = calloc(MAX_CREDENTIAL_LEN, sizeof(char))) == NULL) {
 				fprintf(stderr, "allocation error\n");
 			}
-			strncpy(password, token, MAX_CREDENTIAL_LEN);
+			strncpy(password, token, strlen(token)-2);
+			printf("pwd: %s\n", password);
 
 			u->uname = username;
 			u->pass = password;
 			u->isLoggedIn = false;
-			printf("pwd: %s\n", token);
 			userlist[userID] = u;
 
 			userID++;
@@ -285,7 +285,7 @@ int do_login(const char** array) {
 	char * err_string = "Error: Unknown User...";
     fprintf(stderr, "%s", err_string);
     write(atoi(array[1]), err_string, strlen(err_string) + 1);
-	return -2;
+	return -1;
 }
 
 //directly follow login command
@@ -659,16 +659,20 @@ void client_handler(int client_fd) {
                         args[feedbackTok+1] = dir;
                          
 						feedback = (shell_cmds[cmd_nb].fct)(args);
-                        if (feedback) { // Can be FS error or SHELL error.
-                            if (feedback < 0) {
-                                fprintf(stderr, "ERROR FS: %s\n", ERR_MESSAGES[feedback - ERR_FIRST]);
-                            } else {
-                            	if (feedback == 2) {
-                            		username_index = -1;
+						if ((shell_cmds[cmd_nb].cname == "login") && (feedback >= 0)){
+							username_index = feedback;
+						} else {
+							if (feedback) { // Can be FS error or SHELL error.
+                            	if (feedback < 0) {
+                                	fprintf(stderr, "ERROR FS: %s\n", ERR_MESSAGES[feedback - ERR_FIRST]);
+                            	} else {
+                            		if (feedback == 2) {
+                            			username_index = -1;
+                            		}
+                                	fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[feedback]);
                             	}
-                                fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[feedback]);
-                            }
-                        }
+                        	}
+						}
                     }
                     i = NB_CMD + 1;
                 }
