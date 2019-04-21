@@ -44,7 +44,6 @@ int check_args(int cmd_nb, int argc) {
     if (argc != (int) nb_args) {
         return ERR_ARGS;
     }
-
     return 0;
 }
 
@@ -53,14 +52,12 @@ int check_args(int cmd_nb, int argc) {
 //2 pass was expected, username_index should be set to 1
 int check_auth(int username_index, int client_fd) {
 	if (username_index == -1) {
-		write(client_fd, "You need to log in first\n", 26);
-		return 1;
+		return ERR_AUTH;
 	}
 	if (userlist[username_index]->isLoggedIn == true){
 		return 0;
 	} else {
-		write(client_fd, "You need to log in first\n", 26);
-		return 2;
+		return ERR_AUTH;
 	}
 }
 
@@ -128,7 +125,7 @@ int run_command(const char* command, int client_fd) {
     if (fp_output == NULL) {
         char * err_str = "Error: Failed to run command\n";
         write(client_fd, err_str, strlen(err_str) + 1);
-        return -1;
+        return ERR_EXEC;
     }
 
     while (fgets(cmd_output_line, sizeof(cmd_output_line), fp_output) != NULL) {
@@ -310,7 +307,7 @@ int do_login(const char** array) {
 	char * err_string = "Error: Unknown User...\n";
     fprintf(stderr, "%s", err_string);
     write(atoi(array[1]), err_string, strlen(err_string) + 1);
-	return -1;
+	return ERR_CRED;
 }
 
 //directly follow login command
@@ -341,7 +338,7 @@ int do_pass(const char** array) {
 			fflush(stdout);
 			if(userlist[index]->isLoggedIn) {
 				write(client_fd, "You are already logged in on another client\n", 45);
-				return -1;
+				return ERR_LOGGED;
 			}
 			else{
 				userlist[index]->isLoggedIn = true;
@@ -351,7 +348,7 @@ int do_pass(const char** array) {
 		}
 	}
 	write(client_fd, "Incorrect credentials\n", 23);
-    return 1;
+    return ERR_CRED;
 }
 
 int do_whoami(const char** array) {
@@ -446,7 +443,7 @@ int do_ping(const char** array) {
 
     if (strlen(array[0]) > MAX_HOST_LEN) {
         write(client_fd, "Host name too long, must be < 50\n", 33);
-        return 1;
+        return ERR_BAD_PARAMETER;
     }
     char str[80];
     PING_SHELLCODE(str, array[0]);
@@ -508,7 +505,7 @@ int do_cd(const char** array) {
     }
 
     if (strlen(array[0]) > (MAX_DIR_LEN - strlen(base))) {
-    	return 1;
+    	return ERR_BAD_PARAMETER;
     }
     char new_dir[MAX_DIR_LEN];
     strcpy(new_dir, base);
@@ -544,7 +541,7 @@ int do_mkdir(const char** array) {
 
    	if (strlen(array[0]) > MAX_DIR_LEN - strlen(working_dir)) {
     	write(client_fd, "path is becoming waaaay too long\n", 33);
-    	return 1;
+    	return ERR_PATH;
     }
 
    	char dir_to_mk[MAX_DIR_LEN - strlen(working_dir)];
@@ -737,13 +734,20 @@ void client_handler(int client_fd) {
 							username_index = feedback;
 						} else {
 							if (feedback) { // Can be FS error or SHELL error.
+								char err[MAX_ERR_LEN] = "Error: ";
                             	if (feedback < 0) {
-                                	fprintf(stderr, "ERROR FS: %s\n", ERR_MESSAGES[feedback - ERR_FIRST]);
+                            		strcat(err, ERR_MESSAGES[feedback - ERR_FIRST]);
+                            		strcat(err, "\n");
+                            		write(client_fd, err, strlen(err));
+                                	fprintf(stderr, "%s\n", err);
                             	} else {
                             		if (feedback == 2) {
                             			username_index = -1;
                             		}
-                                	fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[feedback]);
+                            		strcat(err, SHELL_ERR_MESSAGES[feedback]);
+                            		strcat(err, "\n");
+                            		write(client_fd, err, strlen(err));
+                                	fprintf(stderr, "%s\n", err);
                             	}
                         	}
 						}
@@ -752,7 +756,7 @@ void client_handler(int client_fd) {
                 }
             }
             if (cmd_nb < 0) {
-                fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_INVALID_CMD]);
+                fprintf(stderr, "Error: %s\n", SHELL_ERR_MESSAGES[ERR_INVALID_CMD]);
                 char * err_str = "Error: invalid command\n";
                 write(client_fd, err_str, strlen(err_str));
             }

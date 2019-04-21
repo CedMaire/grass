@@ -3,18 +3,21 @@
 const char* const ERR_MESSAGES[] = {
         "", // no error
         "IO error",
-        "filename already exists",
-        "bad parameter",
+        "socket error, try again",
+        "invalid command",
+        "wrong number of arguments",
+        "cmd failed, try again"
 };
 
 const char* const SHELL_ERR_MESSAGES[] = {
-        "", // no error
-        "invalid command",
-        "wrong number of arguments",
-        "user not authentified", //CHECK_AUTH()
-        "file/directory does not exist", //rm
-        "directory already exists", //mkdir
-        "cannot go there", //cd
+        "", // no error 0
+        "you need to log in first", //1
+        "path is too long", //2
+        "file transfer failed", //3
+        "access denied", //4
+        "incorrect credentials", //5
+        "already connected somewhere",
+        "bad parameter"
 };
 
 /*
@@ -35,7 +38,7 @@ int create_socket(enum mode client_server, char * addr_ip, int addr_port) {
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd == -1) {
         fprintf(stderr, "Socket creation failed!\n");
-        return -1;
+        return ERR_SOCKET;
     } else {
         printf("Socket created...\n");
     }
@@ -53,7 +56,7 @@ int create_socket(enum mode client_server, char * addr_ip, int addr_port) {
         if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const char*) &sock_opt, sizeof(sock_opt)) < 0 ||
             setsockopt(socket_fd, SOL_SOCKET, SO_REUSEPORT, (const char*) &sock_opt, sizeof(sock_opt)) < 0) {
             fprintf(stderr, "Socket options {SO_REUSEADDR, SO_REUSEPORT} failed!\n");
-            return -1;
+            return ERR_SOCKET;
         }
 
         int bind_error = -1;
@@ -63,26 +66,26 @@ int create_socket(enum mode client_server, char * addr_ip, int addr_port) {
         if (bind_error != 0) {
             fprintf(stderr, "Socket binding failed!\n");
             fprintf(stderr, "Error Number: %d", errno);
-            return -1;
+            return ERR_SOCKET;
         } else {
             printf("Socket bound...\n");
         }
 
        if (listen(socket_fd, 2) != 0) {
             fprintf(stderr, "Listen failed!\n");
-            return -1;
+            return ERR_SOCKET;
         } else {
             printf("Listening...\n");
         }
     } else if (client_server == client) {
         if (connect(socket_fd, (struct sockaddr *) &server_address, sizeof(server_address)) != 0) {
             fprintf(stderr, "Connection failed!\n");
-            return -1;
+            return ERR_SOCKET;
         } else {
            printf("Connected...\n");
         }
     } else {
-        return -1;
+        return ERR_SOCKET;
     }
 
     fflush(stdout);
@@ -104,7 +107,7 @@ int tokenize_input(char* input, char** args) {
 
     while ((args[i] = strtok(inputCpy, SPACE)) != NULL) {
         if (i > MAX_PARAM + 1) {
-            return -1;
+            return ERR_ARGS;
         }
 
         i += 1;
@@ -148,101 +151,9 @@ int parse_shell_input(char* input, char** cmd_and_args) {
 
     int feedbackTok = tokenize_input(input, cmd_and_args);
     if (feedbackTok < 0) {
-        fprintf(stderr, "ERROR SHELL: %s\n", SHELL_ERR_MESSAGES[ERR_ARGS]);
+        fprintf(stderr, "Error: %s\n", SHELL_ERR_MESSAGES[ERR_ARGS]);
         return ERR_ARGS;
     }
 
     return feedbackTok;
 }
-
-/**
-int do_login(const char** array) {
-    printf("login");
-    return 0;
-}
-
-int do_pass(const char** array) {
-    printf("pass");
-    return 0;
-}
-
-int do_ping(const char** array) {
-    printf("ping");
-    //does not need authentication
-    //returns unix output of ping $HOST -c 1
-    if (strlen(array[0]) > MAX_PING_LEN) {
-      return 1;
-    }
-    char str[80]; //EXPLOIT ?
-    PING_SHELLCODE(str, array[0]);
-    puts(str);
-    return 0;
-}
-
-int do_ls(const char** array) {
-    printf("ls");
-    UNUSED(array);
-    system(LS_SHELLCODE);
-    //check authentication
-
-    return 0;
-}
-
-int do_cd(const char** array) {
-    printf("cd");
-    //authentication
-    //changing current rep
-    //dir = array[0];
-    return 0;
-}
-
-int do_mkdir(const char** array) {
-    printf("mkdir");
-    //authentication
-    //check collision and permissions when create
-    return 0;
-}
-
-int do_rm(const char** array) {
-    printf("rm");
-    //authentication
-    //if exists, checks rights (recursive as works for dir too)
-    //dir = array[0];
-    return 0;
-}
-
-int do_get(const char** array) {
-    printf("get");
-    return 0;
-}
-
-int do_put(const char** array) {
-    printf("put");
-    return 0;
-}
-
-int do_grep(const char** array) {
-    printf("grep");
-    return 0;
-}
-
-int do_date(const char** array) {
-    printf("date");
-    UNUSED(array);
-    check_auth();
-    system(DATE_SHELLCODE);
-    return 0;
-}
-
-int do_exit(const char** array) {
-    printf("exit");
-    UNUSED(array);
-    int err = 0;
-    if (!err) {
-      exit(0);
-    } else {
-      exit(1);
-    }
-    return 0;
-}
-**/

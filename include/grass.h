@@ -50,6 +50,8 @@
 extern const char* const ERR_MESSAGES[];
 extern const char* const SHELL_ERR_MESSAGES[];
 
+#define MAX_ERR_LEN (50)
+
 // Modes for the socket creation.
 enum mode{server, client};
 
@@ -125,12 +127,21 @@ rm %s 2>&1\n\
 // STRUCTURES, ENUMERATIONS
 enum error_codes {
     ERR_FIRST = -128, // not an actual error but to set the first error number
-    ERR_BAD_PARAMETER
+    ERR_IO,
+    ERR_SOCKET,
+    ERR_INVALID_CMD,
+    ERR_ARGS,
+    ERR_EXEC
 };
 
 enum shell_error_codes {
-    ERR_INVALID_CMD = 1,
-    ERR_ARGS
+    ERR_AUTH = 1,
+    ERR_PATH,
+    ERR_TRANSF,
+    ERR_ACCESS, 
+    ERR_CRED, 
+    ERR_LOGGED,
+    ERR_BAD_PARAMETER 
 };
 
 struct User {
