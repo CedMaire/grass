@@ -31,7 +31,7 @@ void hijack_flow(void) {
  *
  * client_server: mode for the socket
  */
-int create_socket(enum mode client_server) {
+int create_socket(enum mode client_server, char * addr_ip, int addr_port) {
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd == -1) {
         fprintf(stderr, "Socket creation failed!\n");
@@ -44,8 +44,8 @@ int create_socket(enum mode client_server) {
     bzero(&server_address, sizeof(server_address));
 
     server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = client_server == server ? htonl(INADDR_ANY) : inet_addr("127.0.0.1");
-    server_address.sin_port = htons(6969);
+    server_address.sin_addr.s_addr = client_server == server ? htonl(INADDR_ANY) : inet_addr(addr_ip);
+    server_address.sin_port = htons(addr_port);
 
     if (client_server == server) {
         fcntl(socket_fd, F_SETFL, O_NONBLOCK);

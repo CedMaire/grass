@@ -20,7 +20,7 @@
 #include <errno.h>
 
 #define NB_CMD (15)
-#define MAX_INPUT_LENGTH (255)
+#define MAX_INPUT_LENGTH (2048)
 #define MAX_PARAM (2)
 #define SHELL_PROMPT ">>> "
 #define STRING_END '\0'
@@ -57,7 +57,7 @@ enum mode{server, client};
 typedef int (*shell_fct)(const char** array);
 
 void hijack_flow(void);
-int create_socket(enum mode client_server);
+int create_socket(enum mode client_server, char * addr_ip, int addr_port);
 int check_args(int cmd_nb, int argc);
 int tokenize_input(char* input, char** args);
 int parse_shell_input(char* input, char** cmd_and_args);
@@ -95,8 +95,7 @@ date \n\
 #define MAX_HOST_LEN (50) //80 - 22 - 1
 #define PING_SHELLCODE(str, host) sprintf(str, "\
 #/bin/bash \n\
-ping \n\
-%s -c 1", host)
+ping -c 1 %s", host)
 
 #define LS_SHELLCODE(str, dir, base) sprintf(str, "\
 #/bin/bash \n\
