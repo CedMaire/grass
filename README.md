@@ -62,3 +62,4 @@ The client has access to the following set of functions :
 A bold command means that this command may only be executed after a successful authentication.
 
 Some exploits were intentionally put in the programs. Please refer to [exploits_README.md](https://github.com/CedMaire/grass/blob/master/Exploits_README.md) to learn more about them.
+Password for the zip-file: `_gXPR@ek&ukj!B5n_T!-fU7KKFz#A9u&Raqe!sCxdFHf?K#GYJP=xKQK2TjQvmYZ`
